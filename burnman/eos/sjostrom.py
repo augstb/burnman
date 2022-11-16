@@ -89,7 +89,7 @@ class Sjostrom(eos.EquationOfState):
         (EQ 2, 10, 17).
         """
         x = V/params['V_0']
-        P = self._bm_birch_murnaghan(x, params)
+        P = self._bm_pressure(V, params)
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -137,18 +137,26 @@ class Sjostrom(eos.EquationOfState):
         """
         x = V/params['V_0']
         F = params['U_0']+\
-            self._bm_molar_internal_energy(P, T, V, params)
+            self._bm_molar_internal_energy(V, params)
         return F
 
 ###############################################################################
 
-    def _bm_birch_murnaghan(self, x, params):
+    def _bm_pressure(self, volume, params):
         """
-        equation for the third order birch-murnaghan equation of state, returns
+        equation for the fourth order birch-murnaghan equation of state, returns
         pressure in the same units that are supplied for the reference bulk
         modulus (params['K_0'])
         """
-        return 3. * params['K_0'] / 2. * (pow(1/x, 7. / 3.) - pow(1/x, 5. / 3.))
+        eta = 0.5*((volume/params['V_0'])**(-2/3) - 1)
+        deta = -1./(3 * params['V_0'])*(volume/params['V_0'])**(-5/3)
+        factor = 9/2*params['K_0']*params['V_0']
+        # a0 is prop included in U_0 : do not add the contribution here.
+        a1 = factor*0
+        a2 = factor*1
+        a3 = factor*(params['Kprime_0'] - 4)
+        a4 = factor*params['C_1']/np.math.factorial(4)
+        return -a1*deta - 2*a2*eta*deta -3*a3*eta**2*deta -4*a4*eta**3*deta
 
     def _bm_bulk_modulus(self, volume, params):
         """
@@ -157,31 +165,31 @@ class Sjostrom(eos.EquationOfState):
         modulus in the same units as the reference bulk
         modulus.  Pressure must be in :math:`[Pa]`.
         """
-
-        x = params['V_0'] / volume
-        f = 0.5 * (pow(x, 2. / 3.) - 1.0)
-
-        K = pow(1. + 2. * f, 5. / 2.) * (params['K_0'] + (3. * params['K_0'] * params['Kprime_0'] -
-                                                          5 * params['K_0']) * f + 27. / 2. * (params['K_0'] * params['Kprime_0'] - 4. * params['K_0']) * f * f)
-        return K
+        eta = 0.5*((volume/params['V_0'])**(-2/3) - 1)
+        deta = -1./(3 * params['V_0'])*(volume/params['V_0'])**(-5/3)
+        d2eta = -5./(3 * params['V_0'])*(-1./(3 * params['V_0']))*(volume/params['V_0'])**(-8/3)
+        factor = 9/2*params['K_0']*params['V_0']
+        # a0 is prop included in U_0 : do not add the contribution here.
+        a1 = factor*0
+        a2 = factor*1
+        a3 = factor*(params['Kprime_0'] - 4)
+        a4 = factor*params['C_1']/np.math.factorial(4)
+        return volume*(2*a2*eta*d2eta    + 2*a2*(deta)**2 + \
+                       3*a3*eta**2*d2eta + 6*a3*eta*(deta)**2 + \
+                       4*a4*eta**3*d2eta + 12*a4*eta**2*(deta)**2)
     
-    def _bm_molar_internal_energy(self, pressure, temperature, volume, params):
+    def _bm_molar_internal_energy(self, volume, params):
         """
         Returns the internal energy :math:`\mathcal{E}` of the mineral. :math:`[J/mol]`
         """
-        x = np.power(volume/params['V_0'], -1./3.)
-        x2 = x*x
-        x4 = x2*x2
-        x6 = x4*x2
-        x8 = x4*x4
-    
-        xi1 = 3.*(4. - params['Kprime_0'])/4.
-    
-        intPdV = (-9./2. * params['V_0'] * params['K_0'] *
-                  ((xi1 + 1.)*(x4/4. - x2/2. + 1./4.) -
-                   xi1*(x6/6. - x4/4. + 1./12.)))
-    
-        return - intPdV
+        eta = 0.5*((volume/params['V_0'])**(-2/3) - 1)
+        factor = 9/2*params['K_0']*params['V_0']
+        # a0 is prop included in U_0 : do not add the contribution here.
+        a1 = factor*0
+        a2 = factor*1
+        a3 = factor*(params['Kprime_0'] - 4)
+        a4 = factor*params['C_1']/np.math.factorial(4)
+        return a1*eta + a2*eta**2 + a3*eta**3 + a4*eta**4
     
     def _debye_grueneisen_parameter(self, x, params):
         """
@@ -204,6 +212,8 @@ class Sjostrom(eos.EquationOfState):
         """
         if 'U_0' not in params:
             params['U_0'] = 0.
+        if 'C_1' not in params:
+            params['C_1'] = 0.
 
         # Now check all the required keys for the
         # thermal part of the EoS are in the dictionary
