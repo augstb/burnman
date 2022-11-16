@@ -7,6 +7,8 @@ sphinxcontrib.bibtex
 nbsphinx
 cvxpy
 jupyter
+autograd
+sparse
 
 # ReadTheDocs cannot build pycddlib successfully
 # because it requires gmp.h, installable only via sudo apt-get install.

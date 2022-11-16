@@ -8,71 +8,82 @@
 from __future__ import absolute_import
 import numpy as np
 from scipy.optimize import fsolve
+import itertools
+from sympy import Rational
 
 from .. import constants
 
 # Import common lower level functions for backwards compatibility
+from ..classes.polytope import MaterialPolytope
 from ..utils.chemistry import dictionarize_formula, formula_mass
 from ..utils.chemistry import formula_to_string, site_occupancies_to_strings
+from ..utils.chemistry import compositional_array
+from ..utils.chemistry import reaction_matrix_as_strings
+
 
 def fugacity(standard_material, assemblage):
     """
-        Parameters
-        ----------
-        standard_material: burnman.Material object
-            set_method and set_state should already have been used
-            material must have a formula as a dictionary parameter
+    Parameters
+    ----------
+    standard_material: burnman.Material object
+        set_method and set_state should already have been used
+        material must have a formula as a dictionary parameter
 
-        assemblage: burnman.Composite object
-            set_method and set_state should already have been used
+    assemblage: burnman.Composite object
+        set_method and set_state should already have been used
 
-        Returns
-        -------
-        fugacity : float
-            Value of the fugacity of the component with respect to
-            the standard material
+    Returns
+    -------
+    fugacity : float
+        Value of the fugacity of the component with respect to
+        the standard material
 
     """
-    component_formula = standard_material.params['formula']
+    component_formula = standard_material.params["formula"]
     chemical_potential = assemblage.chemical_potential([component_formula])[0]
 
-    fugacity = np.exp((chemical_potential - standard_material.gibbs)
-                      / (constants.gas_constant * assemblage.temperature))
+    fugacity = np.exp(
+        (chemical_potential - standard_material.gibbs)
+        / (constants.gas_constant * assemblage.temperature)
+    )
     return fugacity
 
 
 def relative_fugacity(component_formula, assemblage, reference_assemblage):
     """
-        Parameters
-        ----------
-        component_formula: dictionary
-            Chemical formula for which to compute the relative fugacity.
+    Parameters
+    ----------
+    component_formula: dictionary
+        Chemical formula for which to compute the relative fugacity.
 
-        assemblage: burnman.Composite object
-            set_method and set_state should already have been used.
+    assemblage: burnman.Composite object
+        set_method and set_state should already have been used.
 
-        reference_assemblage: burnman.Composite object
-            set_method and set_state should already have been used.
+    reference_assemblage: burnman.Composite object
+        set_method and set_state should already have been used.
 
-        Returns
-        -------
-        relative_fugacity : float
-            Value of the fugacity of the component in the assemblage
-            with respect to the reference_assemblage.
+    Returns
+    -------
+    relative_fugacity : float
+        Value of the fugacity of the component in the assemblage
+        with respect to the reference_assemblage.
 
     """
     chemical_potential = assemblage.chemical_potential([component_formula])[0]
-    reference_chemical_potential = reference_assemblage.chemical_potential([component_formula])[0]
+    reference_chemical_potential = reference_assemblage.chemical_potential(
+        [component_formula]
+    )[0]
 
-    relative_fugacity = np.exp((chemical_potential
-                                - reference_chemical_potential)
-                               / (constants.gas_constant
-                                  * assemblage.temperature))
+    relative_fugacity = np.exp(
+        (chemical_potential - reference_chemical_potential)
+        / (constants.gas_constant * assemblage.temperature)
+    )
     return relative_fugacity
 
 
-def equilibrium_pressure(minerals, stoichiometry, temperature,
-                         pressure_initial_guess=1.e5):
+def equilibrium_pressure(
+    minerals, stoichiometry, temperature, pressure_initial_guess=1.0e5
+):
     """
     Given a list of minerals, their reaction stoichiometries
     and a temperature of interest, compute the
@@ -98,8 +109,9 @@ def equilibrium_pressure(minerals, stoichiometry, temperature,
     pressure : float
         The equilibrium pressure of the reaction [Pa]
     """
+
     def eqm(P, T):
-        gibbs = 0.
+        gibbs = 0.0
         for i, mineral in enumerate(minerals):
             mineral.set_state(P[0], T)
             gibbs = gibbs + mineral.gibbs * stoichiometry[i]
@@ -110,7 +122,9 @@ def equilibrium_pressure(minerals, stoichiometry, temperature,
     return pressure
 
 
-def equilibrium_temperature(minerals, stoichiometry, pressure, temperature_initial_guess=1000.):
+def equilibrium_temperature(
+    minerals, stoichiometry, pressure, temperature_initial_guess=1000.0
+):
     """
     Given a list of minerals, their reaction stoichiometries
     and a pressure of interest, compute the
@@ -136,8 +150,9 @@ def equilibrium_temperature(minerals, stoichiometry, pressure, temperature_initi
     temperature : float
         The equilibrium temperature of the reaction [K]
     """
+
     def eqm(T, P):
-        gibbs = 0.
+        gibbs = 0.0
         for i, mineral in enumerate(minerals):
             mineral.set_state(P, T[0])
             gibbs = gibbs + mineral.gibbs * stoichiometry[i]
@@ -148,9 +163,13 @@ def equilibrium_temperature(minerals, stoichiometry, pressure, temperature_initi
     return temperature
 
 
-def invariant_point(minerals_r1, stoichiometry_r1,
-                    minerals_r2, stoichiometry_r2,
-                    pressure_temperature_initial_guess=[1.e9, 1000.]):
+def invariant_point(
+    minerals_r1,
+    stoichiometry_r1,
+    minerals_r2,
+    stoichiometry_r2,
+    pressure_temperature_initial_guess=[1.0e9, 1000.0],
+):
     """
     Given a list of minerals, their reaction stoichiometries
     and a pressure of interest, compute the
@@ -176,13 +195,14 @@ def invariant_point(minerals_r1, stoichiometry_r1,
     temperature : float
         The equilibrium temperature of the reaction [K]
     """
+
     def eqm(PT):
         P, T = PT
-        gibbs_r1 = 0.
+        gibbs_r1 = 0.0
         for i, mineral in enumerate(minerals_r1):
             mineral.set_state(P, T)
             gibbs_r1 = gibbs_r1 + mineral.gibbs * stoichiometry_r1[i]
-        gibbs_r2 = 0.
+        gibbs_r2 = 0.0
         for i, mineral in enumerate(minerals_r2):
             mineral.set_state(P, T)
             gibbs_r2 = gibbs_r2 + mineral.gibbs * stoichiometry_r2[i]
@@ -249,7 +269,93 @@ def hugoniot(mineral, P_ref, T_ref, pressures, reference_mineral=None):
 
     for i, P in enumerate(pressures):
         temperatures[i] = fsolve(
-            Ediff, [T_ref], args=(mineral, P, P_ref, U_ref, V_ref))[0]
+            Ediff, [T_ref], args=(mineral, P, P_ref, U_ref, V_ref)
+        )[0]
         volumes[i] = mineral.V
 
     return temperatures, volumes
+
+
+def reactions_from_stoichiometric_matrix(stoichiometric_matrix):
+    """
+    Returns a list of all the balanced reactions between compounds
+    of fixed chemical composition. Includes both the forward and
+    reverse reactions
+    (so there will always be an even number of reactions).
+
+    Parameters
+    ----------
+    stoichiometric_matrix : 2D numpy array
+        An array of the stoichiometric (molar) amounts of
+        component j in compound i.
+
+    Returns
+    -------
+    reactions : 2D numpy array
+        An array of the stoichiometric (molar) amounts of
+        compound j in reaction i.
+    """
+    n_components = len(stoichiometric_matrix[0])
+
+    equalities = np.concatenate(([np.zeros(n_components)], stoichiometric_matrix)).T
+
+    polys = [
+        MaterialPolytope(equalities, np.diag(v))
+        for v in itertools.product(*[[-1, 1]] * len(equalities[0]))
+    ]
+    reactions = []
+    for p in polys:
+        v = np.array([[value for value in v] for v in p.raw_vertices])
+
+        if v is not []:
+            reactions.extend(v)
+
+    reactions = np.unique(np.array(reactions, dtype=float), axis=0)
+
+    reactions = np.array(
+        [[Rational(value).limit_denominator(1000000) for value in v] for v in reactions]
+    )
+
+    assert np.max(reactions[:-1, 0]) == 0
+    assert np.max(reactions[-1, 1:]) == 0
+    reactions = reactions[:-1, 1:]
+    return reactions
+
+
+def reactions_from_formulae(formulae, compound_names, return_strings=True):
+    """
+    Returns a list of all the balanced reactions between compounds
+    of fixed chemical composition. Includes both the forward and
+    reverse reactions
+    (so there will always be an even number of reactions).
+
+    Parameters
+    ----------
+    formulae : list of dictionaries or list of strings
+        List of the chemical formulae, either as strings or
+        as a list of dictionaries of elements.
+
+    compound_names : list of strings
+        List of the compound names in the formula list
+
+    return_strings : boolean
+        Whether to return the reactions as strings or array.
+
+    Returns
+    -------
+    reactions : 2D numpy array or list of strings
+        Either a 2D array of the stoichiometric (molar) amounts of
+        compound j in reaction i, or a list of strings.
+        The parameter compound_names is only used if strings
+        are requested.
+    """
+    if isinstance(formulae[0], str):
+        dict_formulae = [dictionarize_formula(f) for f in formulae]
+    else:
+        dict_formulae = formulae
+    stoichiometric_matrix, elements = compositional_array(dict_formulae)
+    R = reactions_from_stoichiometric_matrix(stoichiometric_matrix)
+    if return_strings:
+        return reaction_matrix_as_strings(R, compound_names)
+    else:
+        return R

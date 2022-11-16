@@ -1,4 +1,5 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5552756.svg)](https://doi.org/10.5281/zenodo.5552756)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7080174.svg)](https://doi.org/10.5281/zenodo.7080174)
+[![status](https://joss.theoj.org/papers/b9b95117098cf85598bb01dadbe62ee2/status.svg)](https://joss.theoj.org/papers/b9b95117098cf85598bb01dadbe62ee2)
 
 # BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and planetary sciences
 
@@ -20,7 +21,7 @@ Source code: https://github.com/geodynamics/burnman
 
 Forums: https://community.geodynamics.org/c/burnman
 
-Authors (as of 2021):
+Authors (as of 2022):
 * Bob (Robert) Myhill (main contributor)
 * Cayman Unterborn
 * Ian Rose
@@ -37,6 +38,7 @@ Authors (as of 2021):
 
 * cvxpy
 * pycddlib
+* autograd
 
 ## Installation
 Installation of BurnMan is mostly platform independent.

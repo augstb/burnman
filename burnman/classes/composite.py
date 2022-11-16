@@ -16,24 +16,24 @@ from . import averaging_schemes
 
 from ..utils.reductions import independent_row_indices
 from ..utils.chemistry import sum_formulae, sort_element_list_to_IUPAC_order
+from ..utils.chemistry import reaction_matrix_as_strings
 
 
 def check_pairs(phases, fractions):
     if len(fractions) < 1:
-        raise Exception('ERROR: we need at least one phase')
+        raise Exception("ERROR: we need at least one phase")
 
     if len(phases) != len(fractions):
-        raise Exception(
-            'ERROR: different array lengths for phases and fractions')
+        raise Exception("ERROR: different array lengths for phases and fractions")
 
     total = sum(fractions)
     if abs(total - 1.0) > 1e-10:
-        raise Exception(
-            'ERROR: list of molar fractions does not add up to one')
+        raise Exception("ERROR: list of molar fractions does not add up to one")
     for p in phases:
         if not isinstance(p, Mineral):
             raise Exception(
-                'ERROR: object of type ''%s'' is not of type Mineral' % (type(p)))
+                "ERROR: object of type " "%s" " is not of type Mineral" % (type(p))
+            )
 
 
 # static composite of minerals/composites
@@ -52,7 +52,9 @@ class Composite(Material):
     This class is available as ``burnman.Composite``.
     """
 
-    def __init__(self, phases, fractions=None, fraction_type='molar', name='Unnamed composite'):
+    def __init__(
+        self, phases, fractions=None, fraction_type="molar", name="Unnamed composite"
+    ):
         """
         Create a composite using a list of phases and their fractions (adding to 1.0).
 
@@ -68,7 +70,7 @@ class Composite(Material):
 
         Material.__init__(self)
 
-        assert(len(phases) > 0)
+        assert len(phases) > 0
         self.phases = phases
 
         if fractions is not None:
@@ -76,30 +78,34 @@ class Composite(Material):
         else:
             self.molar_fractions = None
 
-        self.set_averaging_scheme('VoigtReussHill')
+        self.set_averaging_scheme("VoigtReussHill")
         self.name = name
-        self.equilibrium_tolerance = 1.e-3  # J/reaction
+        self.equilibrium_tolerance = 1.0e-3  # J/reaction
         self.print_precision = 4  # number of significant figures used by self.__str__
 
     def __str__(self):
-        string='Composite: {0}'.format(self.name)
+        string = "Composite: {0}".format(self.name)
         try:
-            string += '\n  P, T: {0:.{sf}g} Pa, {1:.{sf}g} K'.format(self.pressure,
-                                                                     self.temperature,
-                                                                     sf=self.print_precision)
+            string += "\n  P, T: {0:.{sf}g} Pa, {1:.{sf}g} K".format(
+                self.pressure, self.temperature, sf=self.print_precision
+            )
         except:
             pass
-        string+='\nPhase and endmember fractions:'
+        string += "\nPhase and endmember fractions:"
         for phase, fraction in zip(*self.unroll()):
-            string+='\n  {0}: {1:0.{sf}f}'.format(phase.name, fraction, sf=self.print_precision)
+            string += "\n  {0}: {1:0.{sf}f}".format(
+                phase.name, fraction, sf=self.print_precision
+            )
             if isinstance(phase, Solution):
-               for i in range(phase.n_endmembers):
-                   string+='\n    {0}: {1:0.{sf}f}'.format(phase.endmember_names[i],
-                                                           phase.molar_fractions[i],
-                                                           sf=self.print_precision)
+                for i in range(phase.n_endmembers):
+                    string += "\n    {0}: {1:0.{sf}f}".format(
+                        phase.endmember_names[i],
+                        phase.molar_fractions[i],
+                        sf=self.print_precision,
+                    )
         return string
 
-    def set_fractions(self, fractions, fraction_type='molar'):
+    def set_fractions(self, fractions, fraction_type="molar"):
         """
         Change the fractions of the phases of this Composite.
         Resets cached properties
@@ -111,7 +117,7 @@ class Composite(Material):
         fraction_type: 'molar' or 'mass'
             specify whether molar or mass fractions are specified.
         """
-        assert(len(self.phases) == len(fractions))
+        assert len(self.phases) == len(fractions)
 
         if isinstance(fractions, list):
             fractions = np.array(fractions)
@@ -120,28 +126,31 @@ class Composite(Material):
             total = sum(fractions)
         except TypeError:
             raise Exception(
-                "Since v0.8, burnman.Composite takes an array of Materials, then an array of fractions")
+                "Since v0.8, burnman.Composite takes an array of Materials, then an array of fractions"
+            )
 
         assert np.all(fractions >= -1e-12)
 
         self.reset()
 
         if abs(total - 1.0) > 1e-12:
-            warnings.warn('Warning: list of fractions does not add '
-                          f'up to one but {total:g}. Normalizing.')
+            warnings.warn(
+                "Warning: list of fractions does not add "
+                f"up to one but {total:g}. Normalizing."
+            )
             fractions /= total
 
-        if fraction_type == 'molar':
+        if fraction_type == "molar":
             molar_fractions = fractions
-        elif fraction_type == 'mass':
-            molar_fractions = self._mass_to_molar_fractions(self.phases,
-                                                            fractions)
+        elif fraction_type == "mass":
+            molar_fractions = self._mass_to_molar_fractions(self.phases, fractions)
         else:
-            raise Exception("Fraction type not recognised. "
-                            "Please use 'molar' or mass")
+            raise Exception(
+                "Fraction type not recognised. " "Please use 'molar' or mass"
+            )
 
         # Set minimum value of a molar fraction at 0.0 (rather than -1.e-12)
-        self.molar_fractions = molar_fractions.clip(0.)
+        self.molar_fractions = molar_fractions.clip(0.0)
 
     def set_method(self, method):
         """
@@ -159,8 +168,7 @@ class Composite(Material):
         """
 
         if type(averaging_scheme) == str:
-            self.averaging_scheme = getattr(
-                averaging_schemes, averaging_scheme)()
+            self.averaging_scheme = getattr(averaging_schemes, averaging_scheme)()
         else:
             self.averaging_scheme = averaging_scheme
         # Clear the cache on resetting averaging scheme
@@ -187,8 +195,7 @@ class Composite(Material):
 
     def unroll(self):
         if self.molar_fractions is None:
-            raise Exception(
-                "Unroll only works if the composite has defined fractions.")
+            raise Exception("Unroll only works if the composite has defined fractions.")
         phases = []
         fractions = []
         for i, phase in enumerate(self.phases):
@@ -217,8 +224,10 @@ class Composite(Material):
         Returns molar internal energy of the mineral [J/mol]
         Aliased with self.energy
         """
-        U = sum(phase.molar_internal_energy * molar_fraction for (
-                phase, molar_fraction) in zip(self.phases, self.molar_fractions))
+        U = sum(
+            phase.molar_internal_energy * molar_fraction
+            for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+        )
         return U
 
     @material_property
@@ -227,8 +236,10 @@ class Composite(Material):
         Returns molar Gibbs free energy of the composite [J/mol]
         Aliased with self.gibbs
         """
-        G = sum(phase.molar_gibbs * molar_fraction for (phase, molar_fraction)
-                in zip(self.phases, self.molar_fractions))
+        G = sum(
+            phase.molar_gibbs * molar_fraction
+            for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+        )
         return G
 
     @material_property
@@ -237,8 +248,10 @@ class Composite(Material):
         Returns molar Helmholtz free energy of the mineral [J/mol]
         Aliased with self.helmholtz
         """
-        F = sum(phase.molar_helmholtz * molar_fraction for (
-                phase, molar_fraction) in zip(self.phases, self.molar_fractions))
+        F = sum(
+            phase.molar_helmholtz * molar_fraction
+            for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+        )
         return F
 
     @material_property
@@ -248,7 +261,11 @@ class Composite(Material):
         Aliased with self.V
         """
         volumes = np.array(
-            [phase.molar_volume * molar_fraction for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
         return np.sum(volumes)
 
     @material_property
@@ -256,7 +273,12 @@ class Composite(Material):
         """
         Returns molar mass of the composite [kg/mol]
         """
-        return sum([phase.molar_mass * molar_fraction for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
+        return sum(
+            [
+                phase.molar_mass * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
 
     @material_property
     def density(self):
@@ -266,7 +288,11 @@ class Composite(Material):
         """
         densities = np.array([phase.density for phase in self.phases])
         volumes = np.array(
-            [phase.molar_volume * molar_fraction for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
         return self.averaging_scheme.average_density(volumes, densities)
 
     @material_property
@@ -275,8 +301,10 @@ class Composite(Material):
         Returns enthalpy of the mineral [J]
         Aliased with self.S
         """
-        S = sum(phase.molar_entropy * molar_fraction for (
-                phase, molar_fraction) in zip(self.phases, self.molar_fractions))
+        S = sum(
+            phase.molar_entropy * molar_fraction
+            for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+        )
         return S
 
     @material_property
@@ -285,8 +313,10 @@ class Composite(Material):
         Returns enthalpy of the mineral [J]
         Aliased with self.H
         """
-        H = sum(phase.molar_enthalpy * molar_fraction for (
-                phase, molar_fraction) in zip(self.phases, self.molar_fractions))
+        H = sum(
+            phase.molar_enthalpy * molar_fraction
+            for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+        )
         return H
 
     @material_property
@@ -295,10 +325,13 @@ class Composite(Material):
         Returns isothermal bulk modulus of the composite [Pa]
         Aliased with self.K_T
         """
-        V_frac = np.array([phase.molar_volume * molar_fraction for (
-                           phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
-        K_ph = np.array(
-            [phase.isothermal_bulk_modulus for phase in self.phases])
+        V_frac = np.array(
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
+        K_ph = np.array([phase.isothermal_bulk_modulus for phase in self.phases])
         G_ph = np.array([phase.shear_modulus for phase in self.phases])
 
         return self.averaging_scheme.average_bulk_moduli(V_frac, K_ph, G_ph)
@@ -309,10 +342,13 @@ class Composite(Material):
         Returns adiabatic bulk modulus of the mineral [Pa]
         Aliased with self.K_S
         """
-        V_frac = np.array([phase.molar_volume * molar_fraction for (
-                           phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
-        K_ph = np.array(
-            [phase.adiabatic_bulk_modulus for phase in self.phases])
+        V_frac = np.array(
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
+        K_ph = np.array([phase.adiabatic_bulk_modulus for phase in self.phases])
         G_ph = np.array([phase.shear_modulus for phase in self.phases])
 
         return self.averaging_scheme.average_bulk_moduli(V_frac, K_ph, G_ph)
@@ -323,7 +359,7 @@ class Composite(Material):
         Returns isothermal compressibility of the composite (or inverse isothermal bulk modulus) [1/Pa]
         Aliased with self.beta_T
         """
-        return 1. / self.isothermal_bulk_modulus
+        return 1.0 / self.isothermal_bulk_modulus
 
     @material_property
     def adiabatic_compressibility(self):
@@ -331,7 +367,7 @@ class Composite(Material):
         Returns isothermal compressibility of the composite (or inverse isothermal bulk modulus) [1/Pa]
         Aliased with self.beta_S
         """
-        return 1. / self.adiabatic_bulk_modulus
+        return 1.0 / self.adiabatic_bulk_modulus
 
     @material_property
     def shear_modulus(self):
@@ -339,10 +375,13 @@ class Composite(Material):
         Returns shear modulus of the mineral [Pa]
         Aliased with self.G
         """
-        V_frac = np.array([phase.molar_volume * molar_fraction for (
-                           phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
-        K_ph = np.array(
-            [phase.adiabatic_bulk_modulus for phase in self.phases])
+        V_frac = np.array(
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
+        K_ph = np.array([phase.adiabatic_bulk_modulus for phase in self.phases])
         G_ph = np.array([phase.shear_modulus for phase in self.phases])
 
         return self.averaging_scheme.average_shear_moduli(V_frac, K_ph, G_ph)
@@ -353,8 +392,10 @@ class Composite(Material):
         Returns P wave speed of the composite [m/s]
         Aliased with self.v_p
         """
-        return np.sqrt((self.adiabatic_bulk_modulus + 4. / 3. *
-                        self.shear_modulus) / self.density)
+        return np.sqrt(
+            (self.adiabatic_bulk_modulus + 4.0 / 3.0 * self.shear_modulus)
+            / self.density
+        )
 
     @material_property
     def bulk_sound_velocity(self):
@@ -378,7 +419,12 @@ class Composite(Material):
         Returns grueneisen parameter of the composite [unitless]
         Aliased with self.gr
         """
-        return self.thermal_expansivity * self.isothermal_bulk_modulus * self.molar_volume / self.molar_heat_capacity_v
+        return (
+            self.thermal_expansivity
+            * self.isothermal_bulk_modulus
+            * self.molar_volume
+            / self.molar_heat_capacity_v
+        )
 
     @material_property
     def thermal_expansivity(self):
@@ -387,7 +433,11 @@ class Composite(Material):
         Aliased with self.alpha
         """
         volumes = np.array(
-            [phase.molar_volume * molar_fraction for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)])
+            [
+                phase.molar_volume * molar_fraction
+                for (phase, molar_fraction) in zip(self.phases, self.molar_fractions)
+            ]
+        )
         alphas = np.array([phase.thermal_expansivity for phase in self.phases])
         return self.averaging_scheme.average_thermal_expansivity(volumes, alphas)
 
@@ -421,7 +471,7 @@ class Composite(Material):
             if n_endmembers == 1:
                 partial_gibbs[j] = self.phases[i].gibbs
             else:
-                partial_gibbs[j:j+n_endmembers] = self.phases[i].partial_gibbs
+                partial_gibbs[j : j + n_endmembers] = self.phases[i].partial_gibbs
             j += n_endmembers
         return partial_gibbs
 
@@ -438,8 +488,7 @@ class Composite(Material):
         Returns True if the reaction affinities are all zero
         within a given tolerance given by self.equilibrium_tolerance.
         """
-        return np.all(np.abs(self.reaction_affinities)
-                      < self.equilibrium_tolerance)
+        return np.all(np.abs(self.reaction_affinities) < self.equilibrium_tolerance)
 
     def set_components(self, components):
         """
@@ -464,9 +513,12 @@ class Composite(Material):
             List of formulae of the components.
         """
         # Convert components into array form
-        b = np.array([[component[el] if el in component else 0.
-                       for component in components]
-                      for el in self.elements])
+        b = np.array(
+            [
+                [component[el] if el in component else 0.0 for component in components]
+                for el in self.elements
+            ]
+        )
 
         # Solve to find a set of endmember proportions that
         # satisfy each of the component formulae
@@ -476,11 +528,12 @@ class Composite(Material):
         res = np.sum(res, axis=1)
         # Check that all components can be described by linear sums of
         # the endmembers
-        if not np.all(res < 1.e-12):
-            bad_indices = np.argwhere(res > 1.e-12)
+        if not np.all(res < 1.0e-12):
+            bad_indices = np.argwhere(res > 1.0e-12)
 
-            raise Exception(f'Components {bad_indices} not defined by '
-                            'prescribed assemblage')
+            raise Exception(
+                f"Components {bad_indices} not defined by " "prescribed assemblage"
+            )
 
         self.components = components
         self.component_array = p[0]
@@ -505,8 +558,10 @@ class Composite(Material):
             equilibrium composite.
         """
         if not self.equilibrated:
-            raise Exception('This composite is not equilibrated, so '
-                            'it cannot have a defined chemical potential.')
+            raise Exception(
+                "This composite is not equilibrated, so "
+                "it cannot have a defined chemical potential."
+            )
 
         if components is not None:
             self.set_components(components)
@@ -541,12 +596,14 @@ class Composite(Material):
         An sympy Matrix where each element M[i,j] corresponds
         to the number of atoms of element[j] in endmember[i].
         """
+
         def f(i, j):
             e = self.elements[j]
             if e in self.endmember_formulae[i]:
                 return nsimplify(self.endmember_formulae[i][e])
             else:
                 return 0
+
         return Matrix(self.n_endmembers, self.n_elements, f)
 
     @cached_property
@@ -563,9 +620,9 @@ class Composite(Material):
         An array where each element arr[i,j] corresponds
         to the number of moles of endmember[j] involved in reaction[i].
         """
-        reaction_basis = np.array([v[:] for v in
-                                   self.stoichiometric_matrix.T.nullspace()],
-                                  dtype=float)
+        reaction_basis = np.array(
+            [v[:] for v in self.stoichiometric_matrix.T.nullspace()], dtype=float
+        )
 
         if len(reaction_basis) == 0:
             reaction_basis = np.empty((0, self.n_endmembers))
@@ -578,21 +635,7 @@ class Composite(Material):
         Returns a list of string representations of all the reactions in
         reaction_basis.
         """
-        reaction_strings = []
-        for reaction in self.reaction_basis:
-            lhs, rhs = ('', '')
-            for i, coefficient in enumerate(reaction):
-                if coefficient < -1.e-10:
-                    if len(lhs) > 0:
-                        lhs += ' + '
-                    lhs += f'{-coefficient} {self.endmember_names[i]}'
-                if coefficient > 1.e-10:
-                    if len(rhs) > 0:
-                        rhs += ' + '
-                    rhs += f'{coefficient} {self.endmember_names[i]}'
-            reaction_strings.append(f'{lhs} = {rhs}')
-
-        return reaction_strings
+        return reaction_matrix_as_strings(self.reaction_basis, self.endmember_names)
 
     @cached_property
     def n_reactions(self):
@@ -616,8 +659,11 @@ class Composite(Material):
         """
         The element indices not included in the independent list.
         """
-        return [i for i in range(self.n_elements)
-                if i not in self.independent_element_indices]
+        return [
+            i
+            for i in range(self.n_elements)
+            if i not in self.independent_element_indices
+        ]
 
     @cached_property
     def reduced_stoichiometric_array(self):
@@ -632,13 +678,12 @@ class Composite(Material):
         An array N such that N.b = 0 for all bulk compositions that can
         be produced with a linear sum of the endmembers in the composite.
         """
-        null_basis = np.array([v[:] for v in
-                               self.stoichiometric_matrix.nullspace()],
-                              dtype=float)
+        null_basis = np.array(
+            [v[:] for v in self.stoichiometric_matrix.nullspace()], dtype=float
+        )
         if null_basis.shape[0] != 0:
             M = null_basis[:, self.dependent_element_indices]
-            assert ((M.shape[0] == M.shape[1])
-                    and (M == np.eye(M.shape[0])).all())
+            assert (M.shape[0] == M.shape[1]) and (M == np.eye(M.shape[0])).all()
 
         return null_basis
 
@@ -648,7 +693,7 @@ class Composite(Material):
         A list of the formulae in the composite.
         """
         self._set_endmember_properties()
-        return self.__dict__['endmember_formulae']
+        return self.__dict__["endmember_formulae"]
 
     @cached_property
     def endmember_names(self):
@@ -659,7 +704,7 @@ class Composite(Material):
         `Mineral.name in Solution.name`.
         """
         self._set_endmember_properties()
-        return self.__dict__['endmember_names']
+        return self.__dict__["endmember_names"]
 
     @cached_property
     def endmembers_per_phase(self):
@@ -668,7 +713,7 @@ class Composite(Material):
         stored within each phase.
         """
         self._set_endmember_properties()
-        return self.__dict__['endmembers_per_phase']
+        return self.__dict__["endmembers_per_phase"]
 
     @cached_property
     def elements(self):
@@ -677,7 +722,7 @@ class Composite(Material):
         returned in the IUPAC element order.
         """
         self._set_endmember_properties()
-        return self.__dict__['elements']
+        return self.__dict__["elements"]
 
     @cached_property
     def n_endmembers(self):
@@ -709,8 +754,9 @@ class Composite(Material):
 
             if isinstance(ph, Solution):
                 endmember_formulae.extend(ph.endmember_formulae)
-                endmember_names.extend([name+' in '+ph.name
-                                        for name in ph.endmember_names])
+                endmember_names.extend(
+                    [name + " in " + ph.name for name in ph.endmember_names]
+                )
                 endmembers_per_phase.append(ph.n_endmembers)
 
             elif isinstance(ph, Mineral):
@@ -719,8 +765,10 @@ class Composite(Material):
                 endmembers_per_phase.append(1)
 
             else:
-                raise Exception('Unsupported Material type, can only read'
-                                'burnman.Mineral or burnman.Solution')
+                raise Exception(
+                    "Unsupported Material type, can only read"
+                    "burnman.Mineral or burnman.Solution"
+                )
 
         # Populate the stoichiometric matrix
         keys = []
@@ -728,7 +776,7 @@ class Composite(Material):
             keys.extend(f.keys())
 
         # Save to dict so that we only need to do this once
-        self.__dict__['endmember_formulae'] = endmember_formulae
-        self.__dict__['endmember_names'] = endmember_names
-        self.__dict__['endmembers_per_phase'] = endmembers_per_phase
-        self.__dict__['elements'] = sort_element_list_to_IUPAC_order(set(keys))
+        self.__dict__["endmember_formulae"] = endmember_formulae
+        self.__dict__["endmember_names"] = endmember_names
+        self.__dict__["endmembers_per_phase"] = endmembers_per_phase
+        self.__dict__["elements"] = sort_element_list_to_IUPAC_order(set(keys))

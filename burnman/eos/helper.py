@@ -34,6 +34,7 @@ class CombinedMineralMethod(object):
 
     def validate_parameters(self, params):
         pass
+
     pass
 
 
@@ -96,5 +97,4 @@ def create(method):
     elif inspect.isclass(method) and issubclass(method, EquationOfState):
         return method()
     else:
-        raise Exception(
-            "unsupported material method " + method.__class__.__name__)
+        raise Exception("unsupported material method " + method.__class__.__name__)
