@@ -144,13 +144,35 @@ class Mineral(Material):
 
     @material_property
     def _molar_volume_unmodified(self):
-        return self.method.volume(self.pressure, self.temperature, self.params)
+        tempvol=self.molar_volume_with_volume
+        if(not tempvol): tempvol=self.method.volume(self.pressure, self.temperature, self.params)
+        if(tempvol < self.params['V_min'] or tempvol > self.params['V_max']):
+            raise ValueError(
+                'You are outside of validity for the equation of state. V='+"{:.3E}".format(tempvol)+',\n'+\
+                'V_min='+"{:.3E}".format(self.params['V_min'])+', V_max='+"{:.3E}".format(self.params['V_max'])+'.')
+        return tempvol
 
     @material_property
     @copy_documentation(Material.molar_volume)
     def molar_volume(self):
+        
         return self._molar_volume_unmodified \
             + self._property_modifiers['dGdP']
+
+    @material_property
+    def pressure(self):
+        if(self._pressure_unmodified < self.params['P_min'] or self._pressure_unmodified > self.params['P_max']):
+            raise ValueError(
+                'You are outside of validity for the equation of state. P='+"{:.3E}".format(self._pressure_unmodified)+',\n'+\
+                'P_min='+"{:.3E}".format(self.params['P_min'])+', P_max='+"{:.3E}".format(self.params['P_max'])+'.')
+        return self._pressure_unmodified
+
+    @material_property
+    def _pressure_unmodified(self):
+        tempvol=self.molar_volume_with_volume
+        if(tempvol): temppress=self.method.pressure(self.temperature, self._molar_volume_unmodified, self.params)
+        else: temppress=self.pressure_temp
+        return temppress
 
     @material_property
     @copy_documentation(Material.molar_entropy)

@@ -20,8 +20,9 @@ from ..utils.math import independent_row_indices
 try:
     cdd = importlib.import_module('cdd')
 except ImportError as err:
-    print(f'Warning: {err}. '
-          'For full functionality of BurnMan, please install pycddlib.')
+    # print(f'Warning: {err}. '
+    #       'For full functionality of BurnMan, please install pycddlib.')
+    pass
 
 
 class SimplexGrid(object):

@@ -16,6 +16,8 @@ from . import dks_solid
 from . import hp
 from . import cork
 from . import vinet
+from . import dorogokupets as drgkpts
+from . import sjostrom as sjstrm
 from . import morse_potential
 from . import reciprocal_kprime
 from . import aa
@@ -45,6 +47,10 @@ def create(method):
             return slb.SLB2()
         elif method == "vinet":
             return vinet.Vinet()
+        elif method == "dorogokupets":
+            return drgkpts.Dorogokupets()
+        elif method == "sjostrom":
+            return sjstrm.Sjostrom()
         elif method == "morse":
             return morse_potential.Morse()
         elif method == "rkprime":

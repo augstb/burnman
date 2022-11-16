@@ -94,6 +94,7 @@ class Material(object):
     def __init__(self):
         self._pressure = None
         self._temperature = None
+        self._molar_volume_with_volume = None
         if not hasattr(self, "name"):
             # if a derived class decides to set .name before calling this
             # constructor (I am looking at you, SLB_2011.py!), do not
@@ -176,7 +177,27 @@ class Material(object):
         self._pressure = pressure
         self._temperature = temperature
 
-    def set_state_with_volume(self, volume, temperature,
+    def set_state_with_volume(self, molar_volume, temperature):
+        """
+        Set the material to the given pressure and temperature.
+
+        Parameters
+        ----------
+        molar_volume : float
+            The desired molar volume in [m^3/mol].
+        temperature : float
+            The desired temperature in [K].
+        """
+        if not hasattr(self, "_molar_volume_with_volume"):
+            raise Exception("Material.set_state() could not find class member _molar_volume_with_volume. "
+                            "Did you forget to call Material.__init__(self) in __init___?")
+        self.reset()
+
+        self._molar_volume_with_volume = molar_volume
+        self._molar_volume = molar_volume
+        self._temperature = temperature
+
+    def set_state_with_volume_OLD(self, volume, temperature,
                               pressure_guesses=[0.e9, 10.e9]):
         """
         This function acts similarly to set_state, but takes volume and
@@ -199,6 +220,7 @@ class Material(object):
             they should not lie outside the valid region of
             the equation of state.
         """
+
         def _delta_volume(pressure, volume, temperature):
             self.set_state(pressure, temperature)
             return volume - self.molar_volume
@@ -245,6 +267,55 @@ class Material(object):
         raise NotImplementedError(
             "need to implement unroll() in derived class!")
 
+    def evaluate_with_volume(self, vars_list, volumes, temperatures):
+        """
+        Returns an array of material properties requested through a list of strings at given volume and temperature
+        conditions. At the end it resets the set_state to the original values.
+        The user needs to call set_method() before.
+
+        Parameters
+        ----------
+        vars_list : list of strings
+            Variables to be returned for given conditions
+        volumes : ndlist or ndarray of float
+            n-dimensional array of molar volumes in [m^3].
+        temperatures : ndlist or ndarray of float
+            n-dimensional array of temperatures in [K].
+
+        Returns
+        -------
+        output : array of array of float
+            Array returning all variables at given volume/temperature values. output[i][j] is property vars_list[j]
+            and temperatures[i] and volumes[i].
+
+        """
+        old_volume = self.molar_volume
+        old_temperature = self.temperature
+        volumes = np.array(volumes)
+        temperatures = np.array(temperatures)
+
+        assert(volumes.shape == temperatures.shape)
+
+        output = np.empty((len(vars_list),) + volumes.shape)
+        for i, v in np.ndenumerate(volumes):
+            self.set_state_with_volume(v, temperatures[i])
+            try: pressure=getattr(self, 'pressure')
+            except:
+                for j in range(len(vars_list)):
+                    output[(j,) + i] = float('inf')
+            else:
+                for j in range(len(vars_list)):
+                    output[(j,) + i] = getattr(self, vars_list[j])
+        if old_volume is None or old_temperature is None:
+            # do not set_state if old values were None. Just reset to None
+            # manually
+            self._volume = self._temperature = None
+            self.reset()
+        else:
+            self.set_state_with_volume(old_volume, old_temperature)
+
+        return output
+
     def evaluate(self, vars_list, pressures, temperatures):
         """
         Returns an array of material properties requested through a list of strings at given pressure and temperature
@@ -279,6 +350,14 @@ class Material(object):
             self.set_state(p, temperatures[i])
             for j in range(len(vars_list)):
                 output[(j,) + i] = getattr(self, vars_list[j])
+            self.set_state(p, temperatures[i])
+            try: pressure=getattr(self, 'pressure')
+            except:
+                for j in range(len(vars_list)):
+                    output[(j,) + i] = float('inf')
+            else:
+                for j in range(len(vars_list)):
+                    output[(j,) + i] = getattr(self, vars_list[j])
         if old_pressure is None or old_temperature is None:
             # do not set_state if old values were None. Just reset to None
             # manually
@@ -290,7 +369,7 @@ class Material(object):
         return output
 
     @property
-    def pressure(self):
+    def pressure_temp(self):
         """
         Returns current pressure that was set with :func:`~burnman.Material.set_state`.
 
@@ -321,6 +400,18 @@ class Material(object):
             Temperature in [K].
         """
         return self._temperature
+        
+    @property
+    def molar_volume_with_volume(self):
+        """
+        Returns current temperature that was set with :func:`~burnman.Material.set_state`.
+
+        Returns
+        -------
+        molar_volume : float
+            Molar volume in [m^3/mol].
+        """
+        return self._molar_volume_with_volume
 
     @material_property
     def molar_internal_energy(self):
