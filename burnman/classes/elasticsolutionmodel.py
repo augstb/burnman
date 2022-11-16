@@ -19,10 +19,11 @@ from .. import constants
 try:
     ag = importlib.import_module("autograd")
 except ImportError as err:
-    print(
-        f"Warning: {err}. "
-        "For full functionality of BurnMan, please install autograd."
-    )
+    pass # HIDE ERROR (TEMPORARY)
+    # print(
+    #     f"Warning: {err}. "
+    #     "For full functionality of BurnMan, please install autograd."
+    # )
 
 
 class ElasticSolutionModel(object):

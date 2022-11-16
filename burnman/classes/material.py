@@ -184,7 +184,6 @@ class Material(object):
         self._pressure = pressure
         self._temperature = temperature
 
-<<<<<<< HEAD
     def set_state_with_volume(self, molar_volume, temperature):
         """
         Set the material to the given pressure and temperature.
@@ -207,11 +206,6 @@ class Material(object):
 
     def set_state_with_volume_OLD(self, volume, temperature,
                               pressure_guesses=[0.e9, 10.e9]):
-=======
-    def set_state_with_volume(
-        self, volume, temperature, pressure_guesses=[0.0e9, 10.0e9]
-    ):
->>>>>>> 2eaa0199aa6298cafd4fdd4d88dfd20ce80d17f2
         """
         This function acts similarly to set_state, but takes volume and
         temperature as input to find the pressure. In order to ensure
