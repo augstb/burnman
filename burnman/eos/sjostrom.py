@@ -91,8 +91,13 @@ class Sjostrom(eos.EquationOfState):
         Returns pressure [Pa] as a function of temperature [K] and volume[m^3]
         (EQ 2, 10, 17).
         """
+        
+        if(params['theta_ref']==0): thermal=0
+        else: thermal=self._debye_pressure(T, V, params)
+        
         x = V/params['V_0']
-        P = self._bm_pressure(V, params)
+        P = self._bm_pressure(V, params)+\
+            thermal
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -138,10 +143,16 @@ class Sjostrom(eos.EquationOfState):
         Returns the Helmholtz free energy [J/mol] as a function of
         pressure [Pa], volume [m^3] and temperature [K] of the mineral.
         """
-        x = V/params['V_0']
+        Debye_T = self._debye_temperature(V, params)
+        
+        if(params['theta_ref']==0): thermal=0
+        else: thermal=debye.helmholtz_free_energy(T, Debye_T, params["n"])
+        
         F = params['U_0']+\
             self._bm_molar_internal_energy(V, params)+\
-            self._mag_helmholtz_free_energy(T, params)
+            self._mag_helmholtz_free_energy(T, params)+\
+            thermal
+            
         return F
 
 ###############################################################################
@@ -218,15 +229,24 @@ class Sjostrom(eos.EquationOfState):
         rhoref = params['molar_mass']/params['V_ref']
         rho = params['molar_mass']/volume
         x=volume/params['V_ref']
+        const = rhoref**params['gamma_inf']*np.exp(.5*(3*params['gamma_inf'] - params['gammaprime_R'] - 3*params['gamma_ref']))
+        const = params['theta_ref']/const
         if 1/x >= 0:
-            theta = params['theta_ref']*rho**params['gamma_inf']*np.exp(rhoref/(2*rho**2)*(\
+            theta = rho**params['gamma_inf']*np.exp(rhoref/(2*rho**2)*(\
             4*params['gamma_inf']*rho - params['gamma_inf']*rhoref - 2*params['gammaprime_R']*rho +\
             params['gammaprime_R']*rhoref - 4*params['gamma_ref']*rho + params['gamma_ref']*rhoref))
         else:
-            theta = params['theta_ref']*rho**params['gamma_0']*np.exp(rho/(2*rhoref**2)*(\
+            theta = rho**params['gamma_0']*np.exp(rho/(2*rhoref**2)*(\
             4*params['gamma_ref']*rhoref - params['gamma_ref']*rho - 2*params['gammaprime_L']*rhoref +\
             params['gammaprime_L']*rho - 4*params['gamma_0']*rhoref + params['gamma_0']*rho))
-        return theta
+        
+        return const*theta
+
+    def _debye_pressure(self, T, V, params):
+        Debye_T = self._debye_temperature(V, params)
+        gr = self._debye_grueneisen_parameter(V/params['V_ref'], params)
+        P_th = gr * debye.thermal_energy(T, Debye_T, params["n"]) / V
+        return P_th
 
     def _mag_helmholtz_free_energy(self, T, params):
         """

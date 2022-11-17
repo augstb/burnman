@@ -106,7 +106,7 @@ def debye_fn_cheb(x):
     val_infinity = 19.4818182068004875
     xcut = -log_eps
 
-    assert x > 0.0  # check for invalid x
+    # assert x > 0.0  # check for invalid x
 
     if x < 2.0 * np.sqrt(2.0) * sqrt_eps:
         return 1.0 - 3.0 * x / 8.0 + x * x / 20.0
