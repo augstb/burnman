@@ -52,7 +52,7 @@ class Sjostrom(eos.EquationOfState):
         Magnetic contribution is deduced from F_mag (EQ 19).
         """
         x = V/params['V_0']
-        C_V = 0.
+        C_V = self._mag_molar_heat_capacity_v(T, params)
         return C_V
 
     def thermal_expansivity(self, P, T, V, params):
@@ -71,7 +71,10 @@ class Sjostrom(eos.EquationOfState):
         Computed from molar heat capacity at constant volume, thermal
         expansivity, and isothermal Bulk modulus.
         """
-        C_P = 0.
+        alpha = self.thermal_expansivity(P, T, V, params)
+        C_V = self.molar_heat_capacity_v(P, T, V, params)
+        K_T = self.isothermal_bulk_modulus(P, T, V, params)
+        C_P = C_V+alpha**2*T*V*K_T
         return C_P
 
     def adiabatic_bulk_modulus(self, P, T, V, params):
@@ -117,7 +120,7 @@ class Sjostrom(eos.EquationOfState):
         volume [m^3] and temperature [K] of the mineral (EQ 7, 17).
         Magnetic contribution is deduced from F_mag (EQ 19).
         """
-        S = 0.
+        S = self._mag_entropy(T, params)
         return S
 
     def enthalpy(self, P, T, V, params):
@@ -137,7 +140,8 @@ class Sjostrom(eos.EquationOfState):
         """
         x = V/params['V_0']
         F = params['U_0']+\
-            self._bm_molar_internal_energy(V, params)
+            self._bm_molar_internal_energy(V, params)+\
+            self._mag_helmholtz_free_energy(T, params)
         return F
 
 ###############################################################################
@@ -206,6 +210,59 @@ class Sjostrom(eos.EquationOfState):
                     (1/x)**2 * (params['gamma_0'] - params['gamma_ref'] + params['gammaprime_L'])
         return gamma
     
+    def _debye_temperature(self, volume, params):
+        """
+        Computes the Einstein temperature from the parameter x = V/V_0
+        (molar volumes) (EQ 15).
+        """
+        rhoref = params['molar_mass']/params['V_ref']
+        rho = params['molar_mass']/volume
+        x=volume/params['V_ref']
+        if 1/x >= 0:
+            theta = params['theta_ref']*rho**params['gamma_inf']*np.exp(rhoref/(2*rho**2)*(\
+            4*params['gamma_inf']*rho - params['gamma_inf']*rhoref - 2*params['gammaprime_R']*rho +\
+            params['gammaprime_R']*rhoref - 4*params['gamma_ref']*rho + params['gamma_ref']*rhoref))
+        else:
+            theta = params['theta_ref']*rho**params['gamma_0']*np.exp(rho/(2*rhoref**2)*(\
+            4*params['gamma_ref']*rhoref - params['gamma_ref']*rho - 2*params['gammaprime_L']*rhoref +\
+            params['gammaprime_L']*rho - 4*params['gamma_0']*rhoref + params['gamma_0']*rho))
+        return theta
+
+    def _mag_helmholtz_free_energy(self, T, params):
+        """
+        Computes the magnetic contribution to F from F_mag (EQ 11).
+        """
+        if params['T_c'] > 0 and T < params['T_c']:
+            a = np.sqrt(1135.)
+            b = 4680. / a**3
+            rapport = (1+np.sqrt(T/a**2))/(1-np.sqrt(T/a**2))
+            return a**3*b*( (1-T/a**2)*np.log(rapport) - 2*np.sqrt(T/a**2) + 4./3*(T/a**2)**3 )
+        else: return 0.
+    
+    def _mag_entropy(self, T, params):
+        """
+        Computes the magnetic contribution to the entropy from F_mag (EQ 11).
+        """
+        if params['T_c'] > 0 and T < params['T_c']:
+            a = np.sqrt(1135.)
+            b = 4680. / a**3
+            rapport = (1+np.sqrt(T/a**2))/(1-np.sqrt(T/a**2))
+            return -4*b*T**2/a**3 + a*b*np.log(rapport)
+        else: return 0.
+
+    def _mag_molar_heat_capacity_v(self, T, params):
+        """
+        Computes the magnetic contribution to the molar heat capacity at
+        constant volume, from F_mag (EQ 11).
+        """
+        if params['T_c'] > 0 and T < params['T_c']:
+            a = np.sqrt(1135.)
+            b = 4680. / a**3
+            rapport = (1+np.sqrt(T/a**2))/(1-np.sqrt(T/a**2))
+            return (-8*b*T**2 + 8*b*T**3/a**2 + a**4*b*np.sqrt(T/a**2))/(a**3*T - a*T**2)
+        else: return 0.
+        
+
     def validate_parameters(self, params):
         """
         Check for existence and validity of the parameters
@@ -214,6 +271,8 @@ class Sjostrom(eos.EquationOfState):
             params['U_0'] = 0.
         if 'C_1' not in params:
             params['C_1'] = 0.
+        if 'T_c' not in params:
+            params['T_c'] = 0.
 
         # Now check all the required keys for the
         # thermal part of the EoS are in the dictionary

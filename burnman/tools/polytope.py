@@ -19,9 +19,10 @@ from .solution import transform_solution_to_new_basis
 try:
     cp = importlib.import_module("cvxpy")
 except ImportError as err:
-    print(
-        f"Warning: {err}. " "For full functionality of BurnMan, please install cvxpy."
-    )
+    pass # HIDE ERROR (TEMPORARY)
+    # print(
+    #     f"Warning: {err}. " "For full functionality of BurnMan, please install cvxpy."
+    # )
 
 
 def solution_polytope_from_charge_balance(

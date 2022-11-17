@@ -10,7 +10,9 @@ import numpy as np
 from ..utils.chemistry import process_solution_chemistry
 from .. import constants
 import warnings
-import sparse
+# Temporary put sparse optional
+try: import sparse
+except: pass
 import string
 from copy import deepcopy
 from .material import material_property, cached_property

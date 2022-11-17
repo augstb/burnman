@@ -13,9 +13,10 @@ import warnings
 try:
     cp = importlib.import_module("cvxpy")
 except ImportError as err:
-    print(
-        f"Warning: {err}. " "For full functionality of BurnMan, please install cvxpy."
-    )
+    pass # HIDE ERROR (TEMPORARY)
+    # print(
+    #     f"Warning: {err}. " "For full functionality of BurnMan, please install cvxpy."
+    # )
 
 
 def weighted_constrained_least_squares(
