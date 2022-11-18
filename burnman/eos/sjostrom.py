@@ -92,12 +92,9 @@ class Sjostrom(eos.EquationOfState):
         (EQ 2, 10, 17).
         """
         
-        if(params['theta_ref']==0): thermal=0
-        else: thermal=self._debye_pressure(T, V, params)
-        
         x = V/params['V_0']
         P = self._bm_pressure(V, params)+\
-            thermal
+            self._thermal_pressure(T, V, params)
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -143,16 +140,11 @@ class Sjostrom(eos.EquationOfState):
         Returns the Helmholtz free energy [J/mol] as a function of
         pressure [Pa], volume [m^3] and temperature [K] of the mineral.
         """
-        Debye_T = self._debye_temperature(V, params)
-        
-        if(params['theta_ref']==0): thermal=0
-        else: thermal=debye.helmholtz_free_energy(T, Debye_T, params["n"])
         
         F = params['U_0']+\
             self._bm_molar_internal_energy(V, params)+\
             self._mag_helmholtz_free_energy(T, params)+\
-            thermal
-            
+            self._thermal_helmholtz_free_energy(T, V, params)
         return F
 
 ###############################################################################
@@ -221,7 +213,7 @@ class Sjostrom(eos.EquationOfState):
                     (1/x)**2 * (params['gamma_0'] - params['gamma_ref'] + params['gammaprime_L'])
         return gamma
     
-    def _debye_temperature(self, volume, params):
+    def _debye_temperature(self, volume, theta_ref, params):
         """
         Computes the Einstein temperature from the parameter x = V/V_0
         (molar volumes) (EQ 15).
@@ -230,7 +222,7 @@ class Sjostrom(eos.EquationOfState):
         rho = params['molar_mass']/volume
         x=volume/params['V_ref']
         const = rhoref**params['gamma_inf']*np.exp(.5*(3*params['gamma_inf'] - params['gammaprime_R'] - 3*params['gamma_ref']))
-        const = params['theta_ref']/const
+        const = theta_ref/const
         if 1/x >= 0:
             theta = rho**params['gamma_inf']*np.exp(rhoref/(2*rho**2)*(\
             4*params['gamma_inf']*rho - params['gamma_inf']*rhoref - 2*params['gammaprime_R']*rho +\
@@ -241,12 +233,72 @@ class Sjostrom(eos.EquationOfState):
             params['gammaprime_L']*rho - 4*params['gamma_0']*rhoref + params['gamma_0']*rho))
         
         return const*theta
+    
+    def _johnson_model(self, T, V, params):
+        a = 1.25/params['molar_mass']**(5/3)
+        rhoref = params['molar_mass']/params['V_ref']
+        rho = params['molar_mass']/V
+        Tm_ref = params['Tm_ref']
+        theta_ref = (a*rhoref**(2./3)*Tm_ref)**(1./2)
+        Debye_T = self._debye_temperature(V, theta_ref, params)
+        Tm = Debye_T**2 / (a * rho**(2./3))
+        
+        a1 = -5.7
+        b = 9/(32*(a1 + 3/4 + 27/16*np.log(5)))
+        alpha = 5*np.exp(-3/(4*b))
+        psi = T / Tm
+        E1 = 3/16 - 3*psi/32 - 3/(32*psi)
+        A1 = -3/16*np.log(psi) - 3*psi/32 - 3/(32*psi)
+        E2 = -3/4 + b*np.log(psi/5) - b + 5*(b + 9/20)/psi
+        A2 = 3/4*np.log(psi) + b*np.log(psi) + 5*(b + 9/20)/psi + b*np.log(5)*np.log(psi) -\
+             b/2*(np.log(psi))**2 - b/2*(np.log(5))**2 - b*np.log(5) - b - 15/16*np.log(5)
+        E3 = -3/2 + 5*(b + 9/20)/psi - alpha*b/psi
+        A3 = 3/2*np.log(psi) + 5*(b + 9/20)/psi - alpha*b/psi + a1
+        epsilon1 = 3/2*(psi - 1/psi)
+        epsilon2 = 0.66/psi
+        alpha1 = 3/2*(2 - psi - 1/psi)
+        alpha2 = 0.66/psi - 0.6
+        
+        gr = self._debye_grueneisen_parameter(V/params['V_ref'], params)
+        E = debye.thermal_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9/8*Debye_T/T
+        F = debye.helmholtz_free_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9/8*Debye_T/T
+        P = gr * E / V 
+        if psi >= 1 and psi <= 1.2:
+            E += params["n"]*constants.gas_constant*T*(E1 + epsilon1)
+            F += params["n"]*constants.gas_constant*T*(A1 + alpha1)
+            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon1)
+        elif psi >= 1.2 and psi <= 5:
+            E += params["n"]*constants.gas_constant*T*(E1 + epsilon2)
+            F += params["n"]*constants.gas_constant*T*(A1 + alpha2)
+            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon2)
+        elif psi >= 5 and psi <= alpha:
+            E += params["n"]*constants.gas_constant*T*(E2 + epsilon2)
+            F += params["n"]*constants.gas_constant*T*(A2 + alpha2)
+            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E2 + epsilon2)
+        elif psi >= alpha:
+            E += params["n"]*constants.gas_constant*T*(E3 + epsilon2)
+            F += params["n"]*constants.gas_constant*T*(A3 + alpha2)
+            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E3 + epsilon2)
+        return E,F,P
+
+    def _thermal_helmholtz_free_energy(self, T, V, params):
+        if(params['theta_ref']==0):
+            eint=self._johnson_model(T, V, params)[1]
+        else:
+            Debye_T = self._debye_temperature(V, params['theta_ref'], params)
+            eint = debye.helmholtz_free_energy(T, Debye_T, params["n"])
+        return eint
+    
+    def _thermal_pressure(self, T, V, params):
+        if(params['theta_ref']==0): P_th=self._johnson_model(T, V, params)[2]
+        else: P_th=self._debye_pressure(T, V, params)
+        return P_th
 
     def _debye_pressure(self, T, V, params):
-        Debye_T = self._debye_temperature(V, params)
+        Debye_T = self._debye_temperature(V, params['theta_ref'], params)
         gr = self._debye_grueneisen_parameter(V/params['V_ref'], params)
-        P_th = gr * debye.thermal_energy(T, Debye_T, params["n"]) / V
-        return P_th
+        press = gr * debye.thermal_energy(T, Debye_T, params["n"]) / V
+        return press
 
     def _mag_helmholtz_free_energy(self, T, params):
         """
