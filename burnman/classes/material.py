@@ -303,7 +303,7 @@ class Material(object):
             and temperatures[i] and volumes[i].
 
         """
-        old_volume = self.molar_volume
+        # old_volume = self.molar_volume
         old_temperature = self.temperature
         volumes = np.array(volumes)
         temperatures = np.array(temperatures)
@@ -320,13 +320,13 @@ class Material(object):
             else:
                 for j in range(len(vars_list)):
                     output[(j,) + i] = getattr(self, vars_list[j])
-        if old_volume is None or old_temperature is None:
-            # do not set_state if old values were None. Just reset to None
-            # manually
-            self._volume = self._temperature = None
-            self.reset()
-        else:
-            self.set_state_with_volume(old_volume, old_temperature)
+        # if old_volume is None or old_temperature is None:
+        #     # do not set_state if old values were None. Just reset to None
+        #     # manually
+        #     self._volume = self._temperature = None
+        #     self.reset()
+        # else:
+        #     self.set_state_with_volume(old_volume, old_temperature)
 
         return output
 

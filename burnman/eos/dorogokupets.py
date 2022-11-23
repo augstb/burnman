@@ -112,6 +112,8 @@ class Dorogokupets(eos.EquationOfState):
             self._einstein_thermal_pressure(T_0, V, params)+\
             self._elec_pressure(T, V, params)-\
             self._elec_pressure(T_0, V, params)
+        # P = self._elec_pressure(T, V, params)-\
+        #     self._elec_pressure(T_0, V, params)
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -184,7 +186,6 @@ class Dorogokupets(eos.EquationOfState):
         Computes the Einstein temperature from the parameter x = V/V_0
         (molar volumes) (EQ 15).
         """
-        print(x, params['T_einstein_0'], params['grueneisen_inf'], params['grueneisen_0'], params['beta'])
         return params['T_einstein_0']*x**(-params['grueneisen_inf'])*\
                np.exp((params['grueneisen_0']-params['grueneisen_inf'])/\
                params['beta']*(1-x**params['beta']))
@@ -214,7 +215,6 @@ class Dorogokupets(eos.EquationOfState):
         theta = self._einstein_temperature(x, params)
         gr = self._grueneisen_parameter(x, params)
         P_th = gr/V*self._einstein_thermal_energy(T, theta, params)
-        print(T,V,theta)
         return P_th
 
     def _elec_pressure(self, T, V, params):
