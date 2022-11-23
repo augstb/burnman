@@ -235,50 +235,56 @@ class Sjostrom(eos.EquationOfState):
         return const*theta
     
     def _johnson_model(self, T, V, params):
-        a = 1.25/params['molar_mass']**(5/3)
-        rhoref = params['molar_mass']/params['V_ref']
-        rho = params['molar_mass']/V
-        Tm_ref = params['Tm_ref']
-        theta_ref = (a*rhoref**(2./3)*Tm_ref)**(1./2)
-        Debye_T = self._debye_temperature(V, theta_ref, params)
-        Tm = Debye_T**2 / (a * rho**(2./3))
+        eV_K=11604.588577015
+        TeV=T/eV_K
+        mass_number=params['molar_mass']*1e3
         
+        a = 1.25/(mass_number**(5/3))
+        rhoref = params['molar_mass']/params['V_ref']*1e-3
+        rho = params['molar_mass']/V*1e-3
+        Tm_ref = params['Tm_ref']/eV_K
+        theta_ref = (a*rhoref**(2./3)*Tm_ref)**(1./2)
+        Debye_T = self._debye_temperature(V, theta_ref*eV_K, params)/eV_K
+        Tm = (Debye_T)**2 / (a * (rho)**(2./3))
+        
+        Debye_T = Debye_T*eV_K
+        Tm = Tm*eV_K
         a1 = -5.7
-        b = 9/(32*(a1 + 3/4 + 27/16*np.log(5)))
-        alpha = 5*np.exp(-3/(4*b))
+        b = 9/(32*(a1 + 3/4 + 27./16.*np.log(5)))
+        alpha = 5*np.exp(-3./(4*b))
         psi = T / Tm
-        E1 = 3/16 - 3*psi/32 - 3/(32*psi)
-        A1 = -3/16*np.log(psi) - 3*psi/32 - 3/(32*psi)
-        E2 = -3/4 + b*np.log(psi/5) - b + 5*(b + 9/20)/psi
-        A2 = 3/4*np.log(psi) + b*np.log(psi) + 5*(b + 9/20)/psi + b*np.log(5)*np.log(psi) -\
-             b/2*(np.log(psi))**2 - b/2*(np.log(5))**2 - b*np.log(5) - b - 15/16*np.log(5)
-        E3 = -3/2 + 5*(b + 9/20)/psi - alpha*b/psi
-        A3 = 3/2*np.log(psi) + 5*(b + 9/20)/psi - alpha*b/psi + a1
-        epsilon1 = 3/2*(psi - 1/psi)
+        E1 = 3./16 - 3.*psi/32 - 3./(32.*psi)
+        A1 = -3./16*np.log(psi) - 3.*psi/32 - 3./(32*psi)
+        E2 = -3./4 + b*np.log(psi/5) - b + 5.*(b + 9./20)/psi
+        A2 = 3./4*np.log(psi) + b*np.log(psi) + 5*(b + 9./20)/psi + b*np.log(5.)*np.log(psi) -\
+             b/2*(np.log(psi))**2 - b/2*(np.log(5.))**2 - b*np.log(5.) - b - 15./16*np.log(5.)
+        E3 = -3./2 + 5.*(b + 9./20)/psi - alpha*b/psi
+        A3 = 3./2*np.log(psi) + 5.*(b + 9./20)/psi - alpha*b/psi + a1
+        epsilon1 = 3./2*(psi - 1./psi)
         epsilon2 = 0.66/psi
-        alpha1 = 3/2*(2 - psi - 1/psi)
+        alpha1 = 3./2*(2. - psi - 1./psi)
         alpha2 = 0.66/psi - 0.6
         
         gr = self._debye_grueneisen_parameter(V/params['V_ref'], params)
-        E = debye.thermal_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9/8*Debye_T/T
-        F = debye.helmholtz_free_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9/8*Debye_T/T
-        P = gr * E / V 
-        if psi >= 1 and psi <= 1.2:
-            E += params["n"]*constants.gas_constant*T*(E1 + epsilon1)
-            F += params["n"]*constants.gas_constant*T*(A1 + alpha1)
-            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon1)
-        elif psi >= 1.2 and psi <= 5:
-            E += params["n"]*constants.gas_constant*T*(E1 + epsilon2)
-            F += params["n"]*constants.gas_constant*T*(A1 + alpha2)
-            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon2)
-        elif psi >= 5 and psi <= alpha:
-            E += params["n"]*constants.gas_constant*T*(E2 + epsilon2)
-            F += params["n"]*constants.gas_constant*T*(A2 + alpha2)
-            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E2 + epsilon2)
-        elif psi >= alpha:
-            E += params["n"]*constants.gas_constant*T*(E3 + epsilon2)
-            F += params["n"]*constants.gas_constant*T*(A3 + alpha2)
-            P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E3 + epsilon2)
+        E = debye.thermal_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9./8*Debye_T/T
+        F = debye.helmholtz_free_energy(T, Debye_T, params["n"]) + params['n'] * constants.gas_constant * T * 9./8*Debye_T/T
+        P = gr * E / V
+        # if psi >= 1 and psi <= 1.2:
+        #     E += params["n"]*constants.gas_constant*T*(E1 + epsilon1)
+        #     F += params["n"]*constants.gas_constant*T*(A1 + alpha1)
+        #     P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon1)
+        # elif psi > 1.2 and psi <= 5:
+        #     E += params["n"]*constants.gas_constant*T*(E1 + epsilon2)
+        #     F += params["n"]*constants.gas_constant*T*(A1 + alpha2)
+        #     P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E1 + epsilon2)
+        # elif psi > 5 and psi <= alpha:
+        #     E += params["n"]*constants.gas_constant*T*(E2 + epsilon2)
+        #     F += params["n"]*constants.gas_constant*T*(A2 + alpha2)
+        #     P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E2 + epsilon2)
+        # elif psi > alpha:
+        #     E += params["n"]*constants.gas_constant*T*(E3 + epsilon2)
+        #     F += params["n"]*constants.gas_constant*T*(A3 + alpha2)
+        #     P += 1/V*(2*gr-2/3)*params["n"]*constants.gas_constant*T*(E3 + epsilon2)
         return E,F,P
 
     def _thermal_helmholtz_free_energy(self, T, V, params):
