@@ -168,15 +168,15 @@ class Dorogokupets(eos.EquationOfState):
         x = V/params['V_0']
         theta = self._einstein_temperature(x, params)
         F = params['U_0']+\
-            self._vinet_molar_internal_energy(P, T, V, params)+\
-            self._helmholtz_free_energy(T, theta, params)-\
-            self._helmholtz_free_energy(T_0, theta, params)+\
-            self._elec_helmholtz_free_energy(T, x, params)-\
-            self._elec_helmholtz_free_energy(T_0, x, params)+\
-            self._mag_helmholtz_free_energy(T, params)-\
-            self._mag_helmholtz_free_energy(T_0, params)+\
-            self._liq_helmoltz_free_energy(T, params)-\
-            self._liq_helmoltz_free_energy(T_0, params)
+            self._vinet_molar_internal_energy(P, T, V, params)
+            # self._helmholtz_free_energy(T, theta, params)-\
+            # self._helmholtz_free_energy(T_0, theta, params)+\
+            # self._elec_helmholtz_free_energy(T, x, params)-\
+            # self._elec_helmholtz_free_energy(T_0, x, params)+\
+            # self._mag_helmholtz_free_energy(T, params)-\
+            # self._mag_helmholtz_free_energy(T_0, params)+\
+            # self._liq_helmoltz_free_energy(T, params)-\
+            # self._liq_helmoltz_free_energy(T_0, params)
         return F
 
 ###############################################################################
