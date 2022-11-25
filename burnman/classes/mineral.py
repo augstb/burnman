@@ -173,6 +173,10 @@ class Mineral(Material):
             raise ValueError(
                 'You are outside of validity for the equation of state. V='+"{:.3E}".format(tempvol)+',\n'+\
                 'V_min='+"{:.3E}".format(self.params['V_min'])+', V_max='+"{:.3E}".format(self.params['V_max'])+'.')
+        if(self.temperature < self.params['T_min'] or self.temperature > self.params['T_max']):
+            raise ValueError(
+                'You are outside of validity for the equation of state. T='+"{:.3E}".format(self.temperature)+',\n'+\
+                'T_min='+"{:.3E}".format(self.params['T_min'])+', T_max='+"{:.3E}".format(self.params['T_max'])+'.')
         return tempvol
 
     @material_property

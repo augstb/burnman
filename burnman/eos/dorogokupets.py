@@ -168,15 +168,15 @@ class Dorogokupets(eos.EquationOfState):
         x = V/params['V_0']
         theta = self._einstein_temperature(x, params)
         F = params['U_0']+\
-            self._vinet_molar_internal_energy(P, T, V, params)
-            # self._helmholtz_free_energy(T, theta, params)-\
-            # self._helmholtz_free_energy(T_0, theta, params)+\
-            # self._elec_helmholtz_free_energy(T, x, params)-\
-            # self._elec_helmholtz_free_energy(T_0, x, params)+\
-            # self._mag_helmholtz_free_energy(T, params)-\
-            # self._mag_helmholtz_free_energy(T_0, params)+\
-            # self._liq_helmoltz_free_energy(T, params)-\
-            # self._liq_helmoltz_free_energy(T_0, params)
+            self._vinet_molar_internal_energy(P, T, V, params)+\
+            self._helmholtz_free_energy(T, theta, params)-\
+            self._helmholtz_free_energy(T_0, theta, params)+\
+            self._elec_helmholtz_free_energy(T, x, params)-\
+            self._elec_helmholtz_free_energy(T_0, x, params)+\
+            self._mag_helmholtz_free_energy(T, params)-\
+            self._mag_helmholtz_free_energy(T_0, params)+\
+            self._liq_helmoltz_free_energy(T, params)-\
+            self._liq_helmoltz_free_energy(T_0, params)
         return F
 
 ###############################################################################
@@ -222,16 +222,14 @@ class Dorogokupets(eos.EquationOfState):
         Computes the electronic contribution to the pressure (EQ 17).
         """
         x = V/params['V_0']
-        if params['elec']: return params['g']/V*self._elec_energy(T, x, params)
-        else: return 0.
+        return params['g']/V*self._elec_energy(T, x, params)
 
     def _elec_energy(self, T, x, params):
         """
         Computes the electronic contribution to the internal energy (EQ 17).
         """
         nR = params['n']*constants.gas_constant
-        if params['elec']: return 3/2*nR*params['e_0']*x**params['g']*T**2
-        else: return 0.
+        return 3/2*nR*params['e_0']*x**params['g']*T**2
 
     def _helmholtz_free_energy(self, T, theta, params):
         """
@@ -268,8 +266,7 @@ class Dorogokupets(eos.EquationOfState):
         Computes the electronic entropy (EQ 17).
         """
         nR = params['n']*constants.gas_constant
-        if params['elec']: return 3*nR*params['e_0']*x**params['g']*T
-        else: return 0.
+        return 3*nR*params['e_0']*x**params['g']*T
 
     def _elec_molar_heat_capacity_v(self, T, x, params):
         """
@@ -277,8 +274,7 @@ class Dorogokupets(eos.EquationOfState):
         volume (EQ 17).
         """
         nR = params['n']*constants.gas_constant
-        if params['elec']: return 3*nR*params['e_0']*x**params['g']*T
-        else: return 0.
+        return 3*nR*params['e_0']*x**params['g']*T
 
     def _einstein_thermal_bulk_modulus(self, T, V, params):
         """
@@ -298,16 +294,14 @@ class Dorogokupets(eos.EquationOfState):
         energy (EQ 17).
         """
         nR = params['n']*constants.gas_constant
-        if params['elec']: return -3./2*nR*params['e_0']*x**params['g']*T**2
-        else: return 0.
+        return -3./2*nR*params['e_0']*x**params['g']*T**2
 
     def _elec_thermal_bulk_modulus(self, T, V, params):
         """
         Computes the electronic contribution to the thermal Bulk modulus
         (EQ 17).
         """
-        if params['elec']: return self._elec_pressure(T, V, params)*(1.0-params['g'])
-        else: return 0.
+        return self._elec_pressure(T, V, params)*(1.0-params['g'])
 
     def _liq_helmoltz_free_energy(self, T, params):
         """
@@ -459,8 +453,20 @@ class Dorogokupets(eos.EquationOfState):
             params['B_0'] = 0.
         if 'a_s' not in params:
             params['a_s'] = 0.
-        if 'elec' not in params:
-            params['elec'] = True
+            
+        # Initialize limits
+        if 'P_min' not in params:
+            params['P_min'] = -float('inf')
+        if 'P_max' not in params:
+            params['P_max'] = float('inf')
+        if 'V_min' not in params:
+            params['V_min'] = -float('inf')
+        if 'V_max' not in params:
+            params['V_max'] = float('inf')
+        if 'T_min' not in params:
+            params['T_min'] = -float('inf')
+        if 'T_max' not in params:
+            params['T_max'] = float('inf')
 
         # Now check all the required keys for the
         # thermal part of the EoS are in the dictionary
