@@ -42,6 +42,7 @@ class Dorogokupets(eos.EquationOfState):
         """
         T_0 = params['T_0']
         K_T = self._vinet_bulk_modulus(V, params)+\
+        self._lennard_jones_bulk_modulus(V, params)+\
         self._einstein_thermal_bulk_modulus(T, V, params)-\
         self._einstein_thermal_bulk_modulus(T_0, V, params)+\
         self._elec_thermal_bulk_modulus(T, V, params)-\
@@ -108,12 +109,11 @@ class Dorogokupets(eos.EquationOfState):
         T_0 = params['T_0']
         x = V/params['V_0']
         P = self._vinet_pressure(x, params)+\
+            self._lennard_jones_pressure(V, params)+\
             self._einstein_thermal_pressure(T, V, params)-\
             self._einstein_thermal_pressure(T_0, V, params)+\
             self._elec_pressure(T, V, params)-\
             self._elec_pressure(T_0, V, params)
-        # P = self._elec_pressure(T, V, params)-\
-        #     self._elec_pressure(T_0, V, params)
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -169,6 +169,7 @@ class Dorogokupets(eos.EquationOfState):
         theta = self._einstein_temperature(x, params)
         F = params['U_0']+\
             self._vinet_molar_internal_energy(P, T, V, params)+\
+            self._lennard_jones_internal_energy(V, params)+\
             self._helmholtz_free_energy(T, theta, params)-\
             self._helmholtz_free_energy(T_0, theta, params)+\
             self._elec_helmholtz_free_energy(T, x, params)-\
@@ -439,34 +440,72 @@ class Dorogokupets(eos.EquationOfState):
                  ((1.-eta*(1.-X))*np.exp(eta*(1.-X))-1.))
         return -intPdV
 
+    def _lennard_jones_internal_energy(self, V, params):
+        """
+        Computes the Lennard-Jones contribution to energy for large molar volumes
+        """
+        if V > params['V_lj']:
+            rho = params['molar_mass']/V
+            f1 = params['lj_f1']
+            f2 = params['lj_f2']
+            f3 = params['lj_f3']
+            flj = params['lj_flj']
+            Ecoh = params['lj_Ecoh']
+            return f1*rho**f2 - f3*rho**flj + Ecoh
+        else: return 0.
+
+    def _lennard_jones_pressure(self, V, params):
+        """
+        Computes the Lennard-Jones contribution to pressure for large molar volumes.
+        P = -dE/dV|s
+        """
+        if V > params['V_lj']:
+            rho = params['molar_mass']/V
+            drhodV = -params['molar_mass']/V**2
+            f1 = params['lj_f1']
+            f2 = params['lj_f2']
+            f3 = params['lj_f3']
+            flj = params['lj_flj']
+            Ecoh = params['lj_Ecoh']
+            return - (f1*f2*drhodV*rho**(f2-1.) - f3*flj*drhodV*rho**(flj-1.))
+        else: return 0.
+    
+    def _lennard_jones_bulk_modulus(self, V, params):
+        """
+        Computes the Lennard-Jones contribution to pressure for large molar volumes.
+        K = -VdP/dV|s
+        """
+        if V > params['V_lj']:
+            rho = params['molar_mass']/V
+            drhodV = -params['molar_mass']/V**2
+            ddrhodV = 2*params['molar_mass']/V**3
+            f1 = params['lj_f1']
+            f2 = params['lj_f2']
+            f3 = params['lj_f3']
+            flj = params['lj_flj']
+            Ecoh = params['lj_Ecoh']
+            return V*(f1*f2*ddrhodV*rho**(f2-1.)   + f1*f2*drhodV*(f2-1.)*drhodV*rho**(f2-2.) -\
+                      f3*flj*ddrhodV*rho**(flj-1.) - f3*flj*drhodV*(flj-1.)*drhodV*rho**(f2-2.))
+        else: return 0.
+    
     def validate_parameters(self, params):
         """
         Check for existence and validity of the parameters
         """
-        if 'T_0' not in params:
-            params['T_0'] = 300.
-        if 'U_0' not in params:
-            params['U_0'] = 0.
-        if 'Tc' not in params:
-            params['Tc'] = 0.
-        if 'B_0' not in params:
-            params['B_0'] = 0.
-        if 'a_s' not in params:
-            params['a_s'] = 0.
+        if 'T_0' not in params:  params['T_0']  = 300.
+        if 'U_0' not in params:  params['U_0']  = 0.
+        if 'Tc' not in params:   params['Tc']   = 0.
+        if 'B_0' not in params:  params['B_0']  = 0.
+        if 'a_s' not in params:  params['a_s']  = 0.
+        if 'V_lj' not in params: params['V_lj'] = float('inf')
             
         # Initialize limits
-        if 'P_min' not in params:
-            params['P_min'] = -float('inf')
-        if 'P_max' not in params:
-            params['P_max'] = float('inf')
-        if 'V_min' not in params:
-            params['V_min'] = -float('inf')
-        if 'V_max' not in params:
-            params['V_max'] = float('inf')
-        if 'T_min' not in params:
-            params['T_min'] = -float('inf')
-        if 'T_max' not in params:
-            params['T_max'] = float('inf')
+        if 'P_min' not in params: params['P_min'] = -float('inf')
+        if 'P_max' not in params: params['P_max'] = float('inf')
+        if 'V_min' not in params: params['V_min'] = -float('inf')
+        if 'V_max' not in params: params['V_max'] = float('inf')
+        if 'T_min' not in params: params['T_min'] = -float('inf')
+        if 'T_max' not in params: params['T_max'] = float('inf')
 
         # Now check all the required keys for the
         # thermal part of the EoS are in the dictionary
