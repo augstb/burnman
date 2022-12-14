@@ -451,7 +451,9 @@ class Dorogokupets(eos.EquationOfState):
             f3 = params['lj_f3']
             flj = params['lj_flj']
             Ecoh = params['lj_Ecoh']
-            return f1*rho**f2 - f3*rho**flj + Ecoh
+            E_lj = f1*rho**f2 - f3*rho**flj + Ecoh
+            # return E_lj
+            return 0.
         else: return 0.
 
     def _lennard_jones_pressure(self, V, params):
@@ -467,7 +469,8 @@ class Dorogokupets(eos.EquationOfState):
             f3 = params['lj_f3']
             flj = params['lj_flj']
             Ecoh = params['lj_Ecoh']
-            return - (f1*f2*drhodV*rho**(f2-1.) - f3*flj*drhodV*rho**(flj-1.))
+            # return - (f1*f2*drhodV*rho**(f2-1.) - f3*flj*drhodV*rho**(flj-1.))
+            return 0.
         else: return 0.
     
     def _lennard_jones_bulk_modulus(self, V, params):
@@ -484,28 +487,31 @@ class Dorogokupets(eos.EquationOfState):
             f3 = params['lj_f3']
             flj = params['lj_flj']
             Ecoh = params['lj_Ecoh']
-            return V*(f1*f2*ddrhodV*rho**(f2-1.)   + f1*f2*drhodV*(f2-1.)*drhodV*rho**(f2-2.) -\
-                      f3*flj*ddrhodV*rho**(flj-1.) - f3*flj*drhodV*(flj-1.)*drhodV*rho**(f2-2.))
+            # return V*(f1*f2*ddrhodV*rho**(f2-1.)   + f1*f2*drhodV*(f2-1.)*drhodV*rho**(f2-2.) -\
+            #           f3*flj*ddrhodV*rho**(flj-1.) - f3*flj*drhodV*(flj-1.)*drhodV*rho**(f2-2.))
+            return 0.
         else: return 0.
     
     def validate_parameters(self, params):
         """
         Check for existence and validity of the parameters
         """
-        if 'T_0' not in params:  params['T_0']  = 300.
-        if 'U_0' not in params:  params['U_0']  = 0.
-        if 'Tc' not in params:   params['Tc']   = 0.
-        if 'B_0' not in params:  params['B_0']  = 0.
-        if 'a_s' not in params:  params['a_s']  = 0.
-        if 'V_lj' not in params: params['V_lj'] = float('inf')
-            
+        if 'T_0'   not in params: params['T_0']   = 300.
+        if 'U_0'   not in params: params['U_0']   = 0.
+        if 'Tc'    not in params: params['Tc']    = 0.
+        if 'B_0'   not in params: params['B_0']   = 0.
+        if 'a_s'   not in params: params['a_s']   = 0.
+        if 'V_lj'  not in params: params['V_lj']  = +float('inf')
+        if 'lj_f1' not in params: params['lj_f1'] = 0.
+        if 'lj_f2' not in params: params['lj_f2'] = 0.
+        if 'lj_f3' not in params: params['lj_f3'] = 0.
         # Initialize limits
         if 'P_min' not in params: params['P_min'] = -float('inf')
-        if 'P_max' not in params: params['P_max'] = float('inf')
+        if 'P_max' not in params: params['P_max'] = +float('inf')
         if 'V_min' not in params: params['V_min'] = -float('inf')
-        if 'V_max' not in params: params['V_max'] = float('inf')
+        if 'V_max' not in params: params['V_max'] = +float('inf')
         if 'T_min' not in params: params['T_min'] = -float('inf')
-        if 'T_max' not in params: params['T_max'] = float('inf')
+        if 'T_max' not in params: params['T_max'] = +float('inf')
 
         # Now check all the required keys for the
         # thermal part of the EoS are in the dictionary
