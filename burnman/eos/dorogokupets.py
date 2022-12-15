@@ -41,8 +41,9 @@ class Dorogokupets(eos.EquationOfState):
         temperature [K], and volume [m^3] (EQ 3, 11, 17).
         """
         T_0 = params['T_0']
-        K_T = self._vinet_bulk_modulus(V, params)+\
-        self._lennard_jones_bulk_modulus(V, params)+\
+        if V > params['lj_V']: cold_curve=self._lennard_jones_bulk_modulus(V, params)
+        else: cold_curve=self._vinet_bulk_modulus(V, params)
+        K_T = cold_curve+\
         self._einstein_thermal_bulk_modulus(T, V, params)-\
         self._einstein_thermal_bulk_modulus(T_0, V, params)+\
         self._elec_thermal_bulk_modulus(T, V, params)-\
@@ -108,8 +109,9 @@ class Dorogokupets(eos.EquationOfState):
         """
         T_0 = params['T_0']
         x = V/params['V_0']
-        P = self._vinet_pressure(x, params)+\
-            self._lennard_jones_pressure(V, params)+\
+        if V > params['lj_V']: cold_curve=self._lennard_jones_pressure(V, params)
+        else: cold_curve=self._vinet_pressure(x, params)
+        P = cold_curve+\
             self._einstein_thermal_pressure(T, V, params)-\
             self._einstein_thermal_pressure(T_0, V, params)+\
             self._elec_pressure(T, V, params)-\
@@ -167,9 +169,10 @@ class Dorogokupets(eos.EquationOfState):
         T_0 = params['T_0']
         x = V/params['V_0']
         theta = self._einstein_temperature(x, params)
+        if V > params['lj_V']: cold_curve=self._lennard_jones_internal_energy(V, params)
+        else: cold_curve=self._vinet_molar_internal_energy(P, T, V, params)
         F = params['U_0']+\
-            self._vinet_molar_internal_energy(P, T, V, params)+\
-            self._lennard_jones_internal_energy(V, params)+\
+            cold_curve+\
             self._helmholtz_free_energy(T, theta, params)-\
             self._helmholtz_free_energy(T_0, theta, params)+\
             self._elec_helmholtz_free_energy(T, x, params)-\
@@ -444,53 +447,54 @@ class Dorogokupets(eos.EquationOfState):
         """
         Computes the Lennard-Jones contribution to energy for large molar volumes
         """
-        if V > params['V_lj']:
-            rho = params['molar_mass']/V
-            f1 = params['lj_f1']
-            f2 = params['lj_f2']
-            f3 = params['lj_f3']
-            flj = params['lj_flj']
-            Ecoh = params['lj_Ecoh']
-            E_lj = f1*rho**f2 - f3*rho**flj + Ecoh
-            # return E_lj
-            return 0.
-        else: return 0.
+        rho = params['molar_mass']/V
+        lj_rho = params['molar_mass']/params['lj_V']
+        rhor = rho/lj_rho
+        Ac = params['lj_Ac']
+        Bc = params['lj_Bc']
+        m = params['lj_m']
+        # n = params['lj_n']
+        Ecoh = params['lj_Ecoh']
+        n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
+        # E_lj = Ac*rho**n - Bc*rho**m + Ecoh
+        E_lj = Ecoh / (n-m) * (m*rhor**n - n*rhor**m) + Ecoh
+        return E_lj
 
     def _lennard_jones_pressure(self, V, params):
         """
         Computes the Lennard-Jones contribution to pressure for large molar volumes.
         P = -dE/dV|s
         """
-        if V > params['V_lj']:
-            rho = params['molar_mass']/V
-            drhodV = -params['molar_mass']/V**2
-            f1 = params['lj_f1']
-            f2 = params['lj_f2']
-            f3 = params['lj_f3']
-            flj = params['lj_flj']
-            Ecoh = params['lj_Ecoh']
-            # return - (f1*f2*drhodV*rho**(f2-1.) - f3*flj*drhodV*rho**(flj-1.))
-            return 0.
-        else: return 0.
+        rho = params['molar_mass']/V
+        lj_rho = params['molar_mass']/params['lj_V']
+        rhor = rho/lj_rho
+        Ac = params['lj_Ac']
+        Bc = params['lj_Bc']
+        n = params['lj_n']
+        m = params['lj_m']
+        Ecoh = params['lj_Ecoh']
+        n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
+        # P_lj = (Ac*n*rho**(n+1) - Bc*m*rho**(m+1))/params['molar_mass']
+        P_lj = lj_rho * Ecoh * m * n / (n-m) * (rhor**(n+1) - rhor**(m+1))/params['molar_mass']
+        return P_lj
     
     def _lennard_jones_bulk_modulus(self, V, params):
         """
         Computes the Lennard-Jones contribution to pressure for large molar volumes.
         K = -VdP/dV|s
         """
-        if V > params['V_lj']:
-            rho = params['molar_mass']/V
-            drhodV = -params['molar_mass']/V**2
-            ddrhodV = 2*params['molar_mass']/V**3
-            f1 = params['lj_f1']
-            f2 = params['lj_f2']
-            f3 = params['lj_f3']
-            flj = params['lj_flj']
-            Ecoh = params['lj_Ecoh']
-            # return V*(f1*f2*ddrhodV*rho**(f2-1.)   + f1*f2*drhodV*(f2-1.)*drhodV*rho**(f2-2.) -\
-            #           f3*flj*ddrhodV*rho**(flj-1.) - f3*flj*drhodV*(flj-1.)*drhodV*rho**(f2-2.))
-            return 0.
-        else: return 0.
+        rho = params['molar_mass']/V
+        lj_rho = params['molar_mass']/params['lj_V']
+        rhor = rho/lj_rho
+        Ac = params['lj_Ac']
+        Bc = params['lj_Bc']
+        n = params['lj_n']
+        m = params['lj_m']
+        Ecoh = params['lj_Ecoh']
+        n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
+        # K_lj = (Ac*n*(n+1)*rho**(n+1) - Bc*m*(m+1)*rho**(m+1))/params['molar_mass']
+        K_lj = lj_rho * Ecoh * m * n / (n-m) * ((n+1)*rhor**(n+1) - (m+1)*rhor**(m+1)) / params['molar_mass']
+        return K_lj
     
     def validate_parameters(self, params):
         """
@@ -501,10 +505,11 @@ class Dorogokupets(eos.EquationOfState):
         if 'Tc'    not in params: params['Tc']    = 0.
         if 'B_0'   not in params: params['B_0']   = 0.
         if 'a_s'   not in params: params['a_s']   = 0.
-        if 'V_lj'  not in params: params['V_lj']  = +float('inf')
-        if 'lj_f1' not in params: params['lj_f1'] = 0.
-        if 'lj_f2' not in params: params['lj_f2'] = 0.
-        if 'lj_f3' not in params: params['lj_f3'] = 0.
+        if 'lj_V'  not in params: params['lj_V']  = +float('inf')
+        if 'lj_Ac' not in params: params['lj_Ac'] = 0.
+        if 'lj_Bc' not in params: params['lj_Bc'] = 0.
+        if 'lj_n' not in params: params['lj_n'] = 0.
+        if 'lj_m' not in params: params['lj_m'] = 0.
         # Initialize limits
         if 'P_min' not in params: params['P_min'] = -float('inf')
         if 'P_max' not in params: params['P_max'] = +float('inf')
