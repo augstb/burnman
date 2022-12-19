@@ -116,6 +116,8 @@ class Dorogokupets(eos.EquationOfState):
             self._einstein_thermal_pressure(T_0, V, params)+\
             self._elec_pressure(T, V, params)-\
             self._elec_pressure(T_0, V, params)
+        if (T < 5.3 and V > 9.9e-5):
+            print(cold_curve/1e9,self._lennard_jones_pressure(V, params)/1e9,self._einstein_thermal_pressure(T, V, params)/1e9-self._einstein_thermal_pressure(T_0, V, params)/1e9, self._elec_pressure(T, V, params)/1e9-self._elec_pressure(T_0, V, params)/1e9)
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
