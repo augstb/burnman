@@ -15,7 +15,7 @@ class Dorogokupets(eos.EquationOfState):
         Returns voluminal grueneisen parameter [unitless] as a function of
         volume [m^3] (EQ 13, 14).
         """
-        return self._grueneisen_parameter(V/params['V_0'],params)
+        return self._grueneisen_parameter(V,params)
 
     def volume(self, P, T, params):
         """
@@ -69,7 +69,7 @@ class Dorogokupets(eos.EquationOfState):
         """
         x = V/params['V_0']
         C_V = self._einstein_molar_heat_capacity_v(T, V, params)
-        gr = self._grueneisen_parameter(x, params)
+        gr = self._grueneisen_parameter(V, params)
         K_T = self.isothermal_bulk_modulus(P, T, V, params)
         dPdT = gr*C_V/V
         C_Ve = self._elec_molar_heat_capacity_v(T, x, params)
@@ -117,7 +117,11 @@ class Dorogokupets(eos.EquationOfState):
             self._elec_pressure(T, V, params)-\
             self._elec_pressure(T_0, V, params)
         if (T < 5.3 and V > 9.9e-5):
-            print(cold_curve/1e9,self._lennard_jones_pressure(V, params)/1e9,self._einstein_thermal_pressure(T, V, params)/1e9-self._einstein_thermal_pressure(T_0, V, params)/1e9, self._elec_pressure(T, V, params)/1e9-self._elec_pressure(T_0, V, params)/1e9)
+            print(cold_curve/1e9,\
+                  self._lennard_jones_pressure(V, params)/1e9,\
+                  self._einstein_thermal_pressure(T, V, params)/1e9-self._einstein_thermal_pressure(T_0, V, params)/1e9,\
+                  self._elec_pressure(T, V, params)/1e9-self._elec_pressure(T_0, V, params)/1e9
+                 )
         return P
 
     def gibbs_free_energy(self, P, T, V, params):
@@ -146,7 +150,7 @@ class Dorogokupets(eos.EquationOfState):
         Magnetic contribution is deduced from F_mag (EQ 19).
         """
         x = V/params['V_0']
-        theta = self._einstein_temperature(x, params)
+        theta = self._einstein_temperature(V, params)
         S = self._einstein_entropy(T, theta, params)+\
             self._elec_entropy(T, x, params)+\
             self._mag_entropy(T, params)+\
@@ -170,7 +174,7 @@ class Dorogokupets(eos.EquationOfState):
         """
         T_0 = params['T_0']
         x = V/params['V_0']
-        theta = self._einstein_temperature(x, params)
+        theta = self._einstein_temperature(V, params)
         if V > params['lj_V']: cold_curve=self._lennard_jones_internal_energy(V, params)
         else: cold_curve=self._vinet_molar_internal_energy(P, T, V, params)
         F = params['U_0']+\
@@ -183,26 +187,51 @@ class Dorogokupets(eos.EquationOfState):
             self._mag_helmholtz_free_energy(T_0, params)+\
             self._liq_helmoltz_free_energy(T, params)-\
             self._liq_helmoltz_free_energy(T_0, params)
+        
+        if (T < 5.3 and V > 9.9e-5):
+            print(cold_curve,\
+                  self._helmholtz_free_energy(T, theta, params)-self._helmholtz_free_energy(T_0, theta, params),\
+                  self._elec_helmholtz_free_energy(T, x, params)-self._elec_helmholtz_free_energy(T_0, x, params),\
+                  self._mag_helmholtz_free_energy(T, params)-self._mag_helmholtz_free_energy(T_0, params),\
+                  self._liq_helmoltz_free_energy(T, params)-self._liq_helmoltz_free_energy(T_0, params),\
+                  )
         return F
 
 ###############################################################################
 
-    def _einstein_temperature(self, x, params):
+    def _einstein_temperature(self, V, params):
         """
         Computes the Einstein temperature from the parameter x = V/V_0
         (molar volumes) (EQ 15).
         """
-        return params['T_einstein_0']*x**(-params['grueneisen_inf'])*\
-               np.exp((params['grueneisen_0']-params['grueneisen_inf'])/\
-               params['beta']*(1-x**params['beta']))
+        x=V/params['V_0']
+        grueneisen_max=1
+        V_lim = params['molar_mass']/(params['molar_mass']/params['V_0']*((params['grueneisen_0']-params['grueneisen_inf'])/\
+                                      (grueneisen_max-params['grueneisen_inf']))**(1/params['beta']))
+        if V_lim / V >= 1:
+            return params['T_einstein_0']*x**(-params['grueneisen_inf'])*\
+                   np.exp((params['grueneisen_0']-params['grueneisen_inf'])/\
+                   params['beta']*(1-x**params['beta']))
+        else:
+            grueneisen_GP = 2./3
+            return params['T_einstein_0']*(1/x)**(grueneisen_GP+params['grueneisen_inf'])*\
+                   np.exp((grueneisen_max - grueneisen_GP)*(V_lim/V - V_lim/params['V_0']))
 
-    def _grueneisen_parameter(self, x, params):
+    def _grueneisen_parameter(self, V, params):
         """
         Computes the grueneisen parameter according to Altshuler form, from the
-        parameter x = V/V_0 (molar volumes) (EQ 13).
+        molar volume (EQ 13).
         """
-        gr = params['grueneisen_inf']+(params['grueneisen_0']-\
-        params['grueneisen_inf'])*x**params['beta']
+        grueneisen_max=1
+        V_lim = params['molar_mass']/(params['molar_mass']/params['V_0']*((params['grueneisen_0']-params['grueneisen_inf'])/\
+                                      (grueneisen_max-params['grueneisen_inf']))**(1/params['beta']))
+        if V_lim / V >= 1:
+            x = V/params['V_0']
+            gr = params['grueneisen_inf']+(params['grueneisen_0']-\
+            params['grueneisen_inf'])*x**params['beta']
+        else:
+            grueneisen_GP = 2./3
+            gr = grueneisen_GP + (grueneisen_max - grueneisen_GP)*params['V_0']/V + params['grueneisen_inf']
         return gr
 
     def _q_parameter(self, x, gr, params):
@@ -218,8 +247,8 @@ class Dorogokupets(eos.EquationOfState):
         Computes the thermal pressure from Einstein model (EQ 10).
         """
         x = V/params['V_0']
-        theta = self._einstein_temperature(x, params)
-        gr = self._grueneisen_parameter(x, params)
+        theta = self._einstein_temperature(V, params)
+        gr = self._grueneisen_parameter(V, params)
         P_th = gr/V*self._einstein_thermal_energy(T, theta, params)
         return P_th
 
@@ -252,7 +281,7 @@ class Dorogokupets(eos.EquationOfState):
         Computes the molar heat capacity at constant volume from Einstein model
         (EQ 9).
         """
-        theta = self._einstein_temperature(V/params['V_0'], params)
+        theta = self._einstein_temperature(V, params)
         x = theta/T
         nR = params['n']*constants.gas_constant
         C_V = 3.0*nR*(x*x*np.exp(x)/np.power(np.exp(x)-1.0, 2.0))
@@ -288,7 +317,7 @@ class Dorogokupets(eos.EquationOfState):
         Einstein model (EQ 11).
         """
         x = V/params['V_0']
-        gr = self._grueneisen_parameter(x, params)
+        gr = self._grueneisen_parameter(V, params)
         q = self._q_parameter(x, gr, params)
         K_th = self._einstein_thermal_pressure(T, V, params)*(1+gr-q)-\
                gr**2*T*self._einstein_molar_heat_capacity_v(T, V, params)/V
@@ -450,15 +479,11 @@ class Dorogokupets(eos.EquationOfState):
         Computes the Lennard-Jones contribution to energy for large molar volumes
         """
         rho = params['molar_mass']/V
-        lj_rho = params['molar_mass']/params['lj_V']
+        lj_rho = params['molar_mass']/params['V_0']
         rhor = rho/lj_rho
-        Ac = params['lj_Ac']
-        Bc = params['lj_Bc']
         m = params['lj_m']
-        # n = params['lj_n']
         Ecoh = params['lj_Ecoh']
         n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
-        # E_lj = Ac*rho**n - Bc*rho**m + Ecoh
         E_lj = Ecoh / (n-m) * (m*rhor**n - n*rhor**m) + Ecoh
         return E_lj
 
@@ -468,15 +493,11 @@ class Dorogokupets(eos.EquationOfState):
         P = -dE/dV|s
         """
         rho = params['molar_mass']/V
-        lj_rho = params['molar_mass']/params['lj_V']
+        lj_rho = params['molar_mass']/params['V_0']
         rhor = rho/lj_rho
-        Ac = params['lj_Ac']
-        Bc = params['lj_Bc']
-        n = params['lj_n']
         m = params['lj_m']
         Ecoh = params['lj_Ecoh']
         n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
-        # P_lj = (Ac*n*rho**(n+1) - Bc*m*rho**(m+1))/params['molar_mass']
         P_lj = lj_rho * Ecoh * m * n / (n-m) * (rhor**(n+1) - rhor**(m+1))/params['molar_mass']
         return P_lj
     
@@ -486,15 +507,11 @@ class Dorogokupets(eos.EquationOfState):
         K = -VdP/dV|s
         """
         rho = params['molar_mass']/V
-        lj_rho = params['molar_mass']/params['lj_V']
+        lj_rho = params['molar_mass']/params['V_0']
         rhor = rho/lj_rho
-        Ac = params['lj_Ac']
-        Bc = params['lj_Bc']
-        n = params['lj_n']
         m = params['lj_m']
         Ecoh = params['lj_Ecoh']
         n = params['K_0'] * params['molar_mass'] / lj_rho / Ecoh / m
-        # K_lj = (Ac*n*(n+1)*rho**(n+1) - Bc*m*(m+1)*rho**(m+1))/params['molar_mass']
         K_lj = lj_rho * Ecoh * m * n / (n-m) * ((n+1)*rhor**(n+1) - (m+1)*rhor**(m+1)) / params['molar_mass']
         return K_lj
     
@@ -508,10 +525,7 @@ class Dorogokupets(eos.EquationOfState):
         if 'B_0'   not in params: params['B_0']   = 0.
         if 'a_s'   not in params: params['a_s']   = 0.
         if 'lj_V'  not in params: params['lj_V']  = +float('inf')
-        if 'lj_Ac' not in params: params['lj_Ac'] = 0.
-        if 'lj_Bc' not in params: params['lj_Bc'] = 0.
-        if 'lj_n' not in params: params['lj_n'] = 0.
-        if 'lj_m' not in params: params['lj_m'] = 0.
+        if 'lj_m'  not in params: params['lj_m'] = 0.
         # Initialize limits
         if 'P_min' not in params: params['P_min'] = -float('inf')
         if 'P_max' not in params: params['P_max'] = +float('inf')
