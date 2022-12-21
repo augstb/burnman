@@ -191,9 +191,8 @@ class Dorogokupets(eos.EquationOfState):
         (molar volumes) (EQ 15).
         """
         x=V/params['V_0']
-        grueneisen_max=1
         V_lim = params['molar_mass']/(params['molar_mass']/params['V_0']*((params['grueneisen_0']-params['grueneisen_inf'])/\
-                                      (grueneisen_max-params['grueneisen_inf']))**(1/params['beta']))
+                                      (params['grueneisen_max']-params['grueneisen_inf']))**(1/params['beta']))
         # if V_lim / V >= 1:
         #     return params['T_einstein_0']*x**(-params['grueneisen_inf'])*\
         #            np.exp((params['grueneisen_0']-params['grueneisen_inf'])/\
@@ -201,7 +200,7 @@ class Dorogokupets(eos.EquationOfState):
         # else:
         #     grueneisen_GP = 2./3
         #     return params['T_einstein_0']*(1/x)**(grueneisen_GP+params['grueneisen_inf'])*\
-        #            np.exp((grueneisen_max - grueneisen_GP)*(V_lim/V - V_lim/params['V_0']))
+        #            np.exp((params['grueneisen_max'] - grueneisen_GP)*(V_lim/V - V_lim/params['V_0']))
         return params['T_einstein_0']*x**(-params['grueneisen_inf'])*\
                np.exp((params['grueneisen_0']-params['grueneisen_inf'])/\
                params['beta']*(1-x**params['beta']))
@@ -211,16 +210,15 @@ class Dorogokupets(eos.EquationOfState):
         Computes the grueneisen parameter according to Altshuler form, from the
         molar volume (EQ 13).
         """
-        grueneisen_max=1
         V_lim = params['molar_mass']/(params['molar_mass']/params['V_0']*((params['grueneisen_0']-params['grueneisen_inf'])/\
-                                      (grueneisen_max-params['grueneisen_inf']))**(1/params['beta']))
+                                      (params['grueneisen_max']-params['grueneisen_inf']))**(1/params['beta']))
         # if V_lim / V >= 1:
         #     x = V/params['V_0']
         #     gr = params['grueneisen_inf']+(params['grueneisen_0']-\
         #     params['grueneisen_inf'])*x**params['beta']
         # else:
         #     grueneisen_GP = 2./3
-        #     gr = grueneisen_GP + (grueneisen_max - grueneisen_GP)*params['V_0']/V + params['grueneisen_inf']
+        #     gr = grueneisen_GP + (params['grueneisen_max'] - grueneisen_GP)*params['V_0']/V + params['grueneisen_inf']
         x = V/params['V_0']
         gr = params['grueneisen_inf']+(params['grueneisen_0']-\
              params['grueneisen_inf'])*x**params['beta']
@@ -518,6 +516,7 @@ class Dorogokupets(eos.EquationOfState):
         if 'a_s'   not in params: params['a_s']   = 0.
         if 'lj_V'  not in params: params['lj_V']  = +float('inf')
         if 'lj_m'  not in params: params['lj_m'] = 0.
+        if 'grueneisen_max' not in params: params['grueneisen_max'] = 1
         # Initialize limits
         if 'P_min' not in params: params['P_min'] = -float('inf')
         if 'P_max' not in params: params['P_max'] = +float('inf')
