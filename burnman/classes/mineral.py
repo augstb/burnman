@@ -369,6 +369,11 @@ class Mineral(Material):
     @copy_documentation(Material.shear_wave_velocity)
     def shear_wave_velocity(self):
         return np.sqrt(self.shear_modulus / self.density)
+    
+    @material_property
+    @copy_documentation(Material.einstein_temperature)
+    def einstein_temperature(self):
+        return self.method.einstein_temperature(self.molar_volume, self.params)
 
     @material_property
     @copy_documentation(Material.grueneisen_parameter)

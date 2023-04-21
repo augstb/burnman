@@ -737,6 +737,24 @@ class Material(object):
         raise NotImplementedError(
             "need to implement grueneisen_parameter() in derived class!"
         )
+    
+    @material_property
+    def einstein_temperature(self):
+        """
+        Returns the einstein temperature of the mineral.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+
+        Returns
+        -------
+        theta : float
+            Einstein temperature [K].
+        """
+        raise NotImplementedError(
+            "need to implement einstein_temperature() in derived class!"
+        )
 
     @material_property
     def thermal_expansivity(self):

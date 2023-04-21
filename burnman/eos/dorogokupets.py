@@ -17,6 +17,13 @@ class Dorogokupets(eos.EquationOfState):
         """
         return self._grueneisen_parameter(V,params)
 
+    def einstein_temperature(self, V, params):
+        """
+        Returns the Einstein thermal ionic model characteristic
+        temperature [K] as a function of the molar volume.
+        """
+        return self._einstein_temperature(V, params)
+
     def volume(self, P, T, params):
         """
         Returns volume [m^3] as a function of pressure [Pa] and

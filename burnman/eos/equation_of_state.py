@@ -101,6 +101,23 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
+    def einstein_temperature(self, volume, params):
+        """
+        Parameters
+        ----------
+        volume : float
+            Molar volume of the mineral.  For consistency this should be calculated
+            using :func:`volume`. :math:`[m^3]`
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        theta : float
+            Einstein temperature of the mineral. :math:`[K]`
+        """
+        raise NotImplementedError("")
+
     def isothermal_bulk_modulus(self, pressure, temperature, volume, params):
         """
         Parameters
