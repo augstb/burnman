@@ -316,7 +316,7 @@ class Material(object):
             try: pressure=getattr(self, 'pressure')
             except:
                 for j in range(len(vars_list)):
-                    output[(j,) + i] = float('inf')
+                    output[(j,) + i] = np.nan
             else:
                 for j in range(len(vars_list)):
                     output[(j,) + i] = getattr(self, vars_list[j])
@@ -368,7 +368,7 @@ class Material(object):
             try: pressure=getattr(self, 'pressure')
             except:
                 for j in range(len(vars_list)):
-                    output[(j,) + i] = float('inf')
+                    output[(j,) + i] = np.nan
             else:
                 for j in range(len(vars_list)):
                     output[(j,) + i] = getattr(self, vars_list[j])
