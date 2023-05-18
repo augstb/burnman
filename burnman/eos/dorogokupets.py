@@ -158,6 +158,14 @@ class Dorogokupets(eos.EquationOfState):
             self._liq_entropy(params)
         return S
 
+    def electronic_entropy(self, P, T, V, params):
+        """
+        Returns the electronic contribution to the entropy [J/K/mol] as a function of pressure [Pa],
+        volume [m^3] and temperature [K] of the mineral.
+        """
+        x = V/params['V_0']
+        return self._elec_entropy(T, x, params)
+
     def enthalpy(self, P, T, V, params):
         """
         Returns the enthalpy [J/mol] as a function of pressure [Pa],

@@ -550,6 +550,23 @@ class Material(object):
         raise NotImplementedError("need to implement molar_entropy() in derived class!")
 
     @material_property
+    def molar_electronic_entropy(self):
+        """
+        Returns molar electronic entropy of the mineral.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+        - Aliased with :func:`~burnman.Material.S`.
+
+        Returns
+        -------
+        molar_electronic_entropy : float
+            Entropy in [J/K/mol].
+        """
+        raise NotImplementedError("need to implement molar_electronic_entropy() in derived class!")
+
+    @material_property
     def molar_enthalpy(self):
         """
         Returns molar enthalpy of the mineral.

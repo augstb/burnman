@@ -374,6 +374,19 @@ class Mineral(Material):
     @copy_documentation(Material.einstein_temperature)
     def einstein_temperature(self):
         return self.method.einstein_temperature(self.molar_volume, self.params)
+    
+    @material_property
+    @copy_documentation(Material.molar_electronic_entropy)
+    def molar_electronic_entropy(self):
+        return (
+            self.method.electronic_entropy(
+                self.pressure,
+                self.temperature,
+                self._molar_volume_unmodified,
+                self.params,
+            )
+            - self._property_modifiers["dGdT"]
+        )
 
     @material_property
     @copy_documentation(Material.grueneisen_parameter)

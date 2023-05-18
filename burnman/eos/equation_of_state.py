@@ -118,6 +118,27 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
+    def electronic_entropy(self, pressure, temperature, volume, params):
+        """
+        Parameters
+        ----------
+        pressure : float
+            Pressure at which to evaluate the equation of state. :math:`[Pa]`
+        temperature : float
+            Temperature at which to evaluate the equation of state. :math:`[K]`
+        volume : float
+            Molar volume of the mineral.  For consistency this should be calculated
+            using :func:`volume`. :math:`[m^3]`
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        S_e : float
+            Electronic entropy of the mineral. :math:`[J/K/mol]`
+        """
+        raise NotImplementedError("")
+
     def isothermal_bulk_modulus(self, pressure, temperature, volume, params):
         """
         Parameters
