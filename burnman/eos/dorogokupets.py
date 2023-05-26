@@ -125,6 +125,14 @@ class Dorogokupets(eos.EquationOfState):
             self._elec_pressure(T_0, V, params)
         return P
 
+    def electronic_pressure(self, T, V, params):
+        """
+        Returns electronic contribution to the pressure [Pa] as a function of
+        temperature [K] and volume[m^3] (EQ 2, 10, 17).
+        """
+        T_0 = params['T_0']
+        return self._elec_pressure(T, V, params)-self._elec_pressure(T_0, V, params)
+
     def gibbs_free_energy(self, P, T, V, params):
         """
         Returns the Gibbs free energy [J/mol] as a function of pressure [Pa],

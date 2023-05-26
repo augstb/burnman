@@ -56,7 +56,25 @@ class EquationOfState(object):
         Returns
         -------
         pressure : float
-            Pressure of the mineral, including cold and thermal parts. [m^3]
+            Pressure of the mineral, including cold and thermal parts. [Pa]
+        """
+        raise NotImplementedError("")
+
+    def electronic_pressure(self, temperature, volume, params):
+        """
+        Parameters
+        ----------
+        volume : float
+            Molar volume at which to evaluate the equation of state. [m^3]
+        temperature : float
+            Temperature at which to evaluate the equation of state. [K]
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        pressure : float
+            Electronic pressure of the mineral. [Pa]
         """
         raise NotImplementedError("")
 

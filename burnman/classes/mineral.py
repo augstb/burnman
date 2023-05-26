@@ -198,6 +198,10 @@ class Mineral(Material):
         if(tempvol): temppress=self.method.pressure(self.temperature, self._molar_volume_unmodified, self.params)
         else: temppress=self.pressure_temp
         return temppress
+    
+    @material_property
+    def electronic_pressure(self):
+        return self.method.electronic_pressure(self.temperature, self._molar_volume_unmodified, self.params)
 
     @material_property
     @copy_documentation(Material.molar_entropy)
