@@ -60,7 +60,7 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
-    def electronic_pressure(self, temperature, volume, params):
+    def elec_pressure(self, temperature, volume, params):
         """
         Parameters
         ----------
@@ -178,6 +178,27 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
+    def elec_isothermal_bulk_modulus(self, pressure, temperature, volume, params):
+        """
+        Parameters
+        ----------
+        pressure : float
+            Pressure at which to evaluate the equation of state. :math:`[Pa]`
+        temperature : float
+            Temperature at which to evaluate the equation of state. :math:`[K]`
+        volume : float
+            Molar volume of the mineral.  For consistency this should be calculated
+            using :func:`volume`. :math:`[m^3]`
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        K_T : float
+            Isothermal bulk modulus of the mineral. :math:`[Pa]`
+        """
+        raise NotImplementedError("")
+
     def adiabatic_bulk_modulus(self, pressure, temperature, volume, params):
         """
         Parameters
@@ -221,6 +242,27 @@ class EquationOfState(object):
         raise NotImplementedError("")
 
     def molar_heat_capacity_v(self, pressure, temperature, volume, params):
+        """
+        Parameters
+        ----------
+        pressure : float
+            Pressure at which to evaluate the equation of state. :math:`[Pa]`
+        temperature : float
+            Temperature at which to evaluate the equation of state. :math:`[K]`
+        volume : float
+            Molar volume of the mineral.  For consistency this should be calculated
+            using :func:`volume`. :math:`[m^3]`
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        C_V : float
+            Heat capacity at constant volume of the mineral. :math:`[J/K/mol]`
+        """
+        raise NotImplementedError("")
+
+    def elec_molar_heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Parameters
         ----------
@@ -305,6 +347,25 @@ class EquationOfState(object):
         raise NotImplementedError("")
 
     def helmholtz_free_energy(self, pressure, temperature, volume, params):
+        """
+        Parameters
+        ----------
+        temperature : float
+            Temperature at which to evaluate the equation of state. [K]
+        volume : float
+            Molar volume of the mineral.  For consistency this should be calculated
+            using :func:`volume`. [m^3]
+        params : dictionary
+            Dictionary containing material parameters required by the equation of state.
+
+        Returns
+        -------
+        F : float
+            Helmholtz free energy of the mineral
+        """
+        raise NotImplementedError("")
+    
+    def elec_helmholtz_free_energy(self, pressure, temperature, volume, params):
         """
         Parameters
         ----------

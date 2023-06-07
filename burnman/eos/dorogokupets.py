@@ -57,6 +57,14 @@ class Dorogokupets(eos.EquationOfState):
         self._elec_thermal_bulk_modulus(T_0, V, params)
         return K_T
 
+    def elec_isothermal_bulk_modulus(self, P, T, V, params):
+        """
+        Returns isothermal Bulk modulus [Pa] as a function of pressure [Pa],
+        temperature [K], and volume [m^3] (EQ 3, 11, 17).
+        """
+        T_0 = params['T_0']
+        return self._elec_thermal_bulk_modulus(T, V, params)-self._elec_thermal_bulk_modulus(T_0, V, params)
+
     def molar_heat_capacity_v(self, P, T, V, params):
         """
         Returns molar heat capacity at constant volume [J/K/mol] as a function
@@ -68,6 +76,15 @@ class Dorogokupets(eos.EquationOfState):
         self._elec_molar_heat_capacity_v(T, x, params)+\
         self._mag_molar_heat_capacity_v(T, params)
         return C_V
+    
+    def elec_molar_heat_capacity_v(self, P, T, V, params):
+        """
+        Returns molar heat capacity at constant volume [J/K/mol] as a function
+        of pressure [Pa], temperature [K], and volume [m^3] (EQ 9, 17).
+        Magnetic contribution is deduced from F_mag (EQ 19).
+        """
+        x = V/params['V_0']
+        return self._elec_molar_heat_capacity_v(T, x, params)
 
     def thermal_expansivity(self, P, T, V, params):
         """
@@ -125,7 +142,7 @@ class Dorogokupets(eos.EquationOfState):
             self._elec_pressure(T_0, V, params)
         return P
 
-    def electronic_pressure(self, T, V, params):
+    def elec_pressure(self, T, V, params):
         """
         Returns electronic contribution to the pressure [Pa] as a function of
         temperature [K] and volume[m^3] (EQ 2, 10, 17).
@@ -166,7 +183,7 @@ class Dorogokupets(eos.EquationOfState):
             self._liq_entropy(params)
         return S
 
-    def electronic_entropy(self, P, T, V, params):
+    def elec_entropy(self, P, T, V, params):
         """
         Returns the electronic contribution to the entropy [J/K/mol] as a function of pressure [Pa],
         volume [m^3] and temperature [K] of the mineral.
@@ -205,6 +222,15 @@ class Dorogokupets(eos.EquationOfState):
             self._liq_helmoltz_free_energy(T, params)-\
             self._liq_helmoltz_free_energy(T_0, params)
         return F
+
+    def elec_helmholtz_free_energy(self, P, T, V, params):
+        """
+        Returns the Helmholtz free energy [J/mol] as a function of
+        pressure [Pa], volume [m^3] and temperature [K] of the mineral.
+        """
+        T_0 = params['T_0']
+        x = V/params['V_0']
+        return self._elec_helmholtz_free_energy(T, x, params)-self._elec_helmholtz_free_energy(T_0, x, params)
 
 ###############################################################################
 

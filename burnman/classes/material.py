@@ -464,6 +464,23 @@ class Material(object):
         raise NotImplementedError("need to implement molar_gibbs() in derived class!")
 
     @material_property
+    def elec_molar_gibbs(self):
+        """
+        Returns the electronic molar Gibbs free energy of the mineral.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+        - Aliased with :func:`~burnman.Material.gibbs`.
+
+        Returns
+        -------
+        elec_molar_gibbs : float
+            Gibbs free energy in [J/mol].
+        """
+        raise NotImplementedError("need to implement elec_molar_gibbs() in derived class!")
+
+    @material_property
     def molar_helmholtz(self):
         """
         Returns the molar Helmholtz free energy of the mineral.
@@ -480,6 +497,25 @@ class Material(object):
         """
         raise NotImplementedError(
             "need to implement molar_helmholtz() in derived class!"
+        )
+
+    @material_property
+    def elec_molar_helmholtz(self):
+        """
+        Returns the electronic molar Helmholtz free energy of the mineral.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+        - Aliased with :func:`~burnman.Material.helmholtz`.
+
+        Returns
+        -------
+        elec_molar_helmholtz : float
+            Helmholtz free energy in [J/mol].
+        """
+        raise NotImplementedError(
+            "need to implement elec_molar_helmholtz() in derived class!"
         )
 
     @material_property
@@ -550,7 +586,7 @@ class Material(object):
         raise NotImplementedError("need to implement molar_entropy() in derived class!")
 
     @material_property
-    def molar_electronic_entropy(self):
+    def elec_molar_entropy(self):
         """
         Returns molar electronic entropy of the mineral.
 
@@ -561,10 +597,10 @@ class Material(object):
 
         Returns
         -------
-        molar_electronic_entropy : float
+        elec_molar_entropy : float
             Entropy in [J/K/mol].
         """
-        raise NotImplementedError("need to implement molar_electronic_entropy() in derived class!")
+        raise NotImplementedError("need to implement elec_molar_entropy() in derived class!")
 
     @material_property
     def molar_enthalpy(self):
@@ -602,6 +638,25 @@ class Material(object):
         """
         raise NotImplementedError(
             "need to implement isothermal_bulk_moduls() in derived class!"
+        )
+
+    @material_property
+    def elec_isothermal_bulk_modulus(self):
+        """
+        Returns electronic isothermal bulk modulus of the material.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+        - Aliased with :func:`~burnman.Material.K_T`.
+
+        Returns
+        -------
+        elec_isothermal_bulk_modulus : float
+            Bulk modulus in [Pa].
+        """
+        raise NotImplementedError(
+            "need to implement elec_isothermal_bulk_moduls() in derived class!"
         )
 
     @material_property
@@ -809,6 +864,25 @@ class Material(object):
         """
         raise NotImplementedError(
             "need to implement molar_heat_capacity_v() in derived class!"
+        )
+
+    @material_property
+    def elec_molar_heat_capacity_v(self):
+        """
+        Returns molar heat capacity at constant volume of the mineral.
+
+        Notes
+        -----
+        - Needs to be implemented in derived classes.
+        - Aliased with :func:`~burnman.Material.C_v`.
+
+        Returns
+        -------
+        elec_molar_heat_capacity_v : float
+            Heat capacity in [J/K/mol].
+        """
+        raise NotImplementedError(
+            "need to implement elec_molar_heat_capacity_v() in derived class!"
         )
 
     @material_property

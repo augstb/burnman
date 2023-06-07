@@ -200,8 +200,8 @@ class Mineral(Material):
         return temppress
     
     @material_property
-    def electronic_pressure(self):
-        return self.method.electronic_pressure(self.temperature, self._molar_volume_unmodified, self.params)
+    def elec_pressure(self):
+        return self.method.elec_pressure(self.temperature, self._molar_volume_unmodified, self.params)
 
     @material_property
     @copy_documentation(Material.molar_entropy)
@@ -217,9 +217,34 @@ class Mineral(Material):
         )
 
     @material_property
+    @copy_documentation(Material.elec_molar_entropy)
+    def elec_molar_entropy(self):
+        return (
+            self.method.elec_entropy(
+                self.pressure,
+                self.temperature,
+                self._molar_volume_unmodified,
+                self.params,
+            )
+            - self._property_modifiers["dGdT"]
+        )
+
+    @material_property
     @copy_documentation(Material.isothermal_bulk_modulus)
     def isothermal_bulk_modulus(self):
         K_T_orig = self.method.isothermal_bulk_modulus(
+            self.pressure, self.temperature, self._molar_volume_unmodified, self.params
+        )
+
+        return self.molar_volume / (
+            (self._molar_volume_unmodified / K_T_orig)
+            - self._property_modifiers["d2GdP2"]
+        )
+
+    @material_property
+    @copy_documentation(Material.elec_isothermal_bulk_modulus)
+    def elec_isothermal_bulk_modulus(self):
+        K_T_orig = self.method.elec_isothermal_bulk_modulus(
             self.pressure, self.temperature, self._molar_volume_unmodified, self.params
         )
 
@@ -330,6 +355,18 @@ class Mineral(Material):
         return self.molar_gibbs - self.pressure * self.molar_volume
 
     @material_property
+    @copy_documentation(Material.elec_molar_helmholtz)
+    def elec_molar_helmholtz(self):
+        return (
+            self.method.elec_helmholtz_free_energy(
+                self.pressure,
+                self.temperature,
+                self._molar_volume_unmodified,
+                self.params,
+            )
+        )
+
+    @material_property
     @copy_documentation(Material.molar_enthalpy)
     def molar_enthalpy(self):
         return self.molar_gibbs + self.temperature * self.molar_entropy
@@ -378,19 +415,6 @@ class Mineral(Material):
     @copy_documentation(Material.einstein_temperature)
     def einstein_temperature(self):
         return self.method.einstein_temperature(self.molar_volume, self.params)
-    
-    @material_property
-    @copy_documentation(Material.molar_electronic_entropy)
-    def molar_electronic_entropy(self):
-        return (
-            self.method.electronic_entropy(
-                self.pressure,
-                self.temperature,
-                self._molar_volume_unmodified,
-                self.params,
-            )
-            - self._property_modifiers["dGdT"]
-        )
 
     @material_property
     @copy_documentation(Material.grueneisen_parameter)
@@ -429,4 +453,16 @@ class Mineral(Material):
             * self.thermal_expansivity
             * self.thermal_expansivity
             * self.isothermal_bulk_modulus
+        )
+
+    @material_property
+    @copy_documentation(Material.elec_molar_heat_capacity_v)
+    def elec_molar_heat_capacity_v(self):
+        return (
+            self.method.elec_molar_heat_capacity_v(
+                self.pressure,
+                self.temperature,
+                self._molar_volume_unmodified,
+                self.params,
+            )
         )
